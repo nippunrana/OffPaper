@@ -115,6 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    // Render dynamic category-aware suggested questions chips
+    renderQuickPrompts(doc);
+
     // Show modal
     chatModal.style.display = 'flex';
     requestAnimationFrame(() => {
@@ -382,6 +385,105 @@ document.addEventListener('DOMContentLoaded', () => {
   function capitalize(str) {
     if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function renderQuickPrompts(doc) {
+    if (!quickPromptsContainer) return;
+    quickPromptsContainer.innerHTML = '';
+
+    let questions = doc.suggested_questions || [];
+    if (typeof questions === 'string') {
+      try { questions = JSON.parse(questions); } catch (e) { questions = []; }
+    }
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      const cats = doc.categories || [doc.doc_type || 'plan'];
+      questions = getDefaultCategoryQuestions(cats);
+    }
+
+    // Ensure maximum 3 questions
+    questions = questions.slice(0, 3);
+
+    questions.forEach((qText) => {
+      if (!qText || typeof qText !== 'string') return;
+      const trimmedQ = qText.trim();
+      if (!trimmedQ) return;
+
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chat-chip';
+      chip.setAttribute('data-prompt', trimmedQ);
+
+      const icon = getPromptIcon(trimmedQ);
+      chip.innerHTML = `<span>${icon}</span> ${escapeHtml(trimmedQ)}`;
+      quickPromptsContainer.appendChild(chip);
+    });
+  }
+
+  function getPromptIcon(promptText) {
+    const textLower = (promptText || '').toLowerCase();
+    if (textLower.includes('total') || textLower.includes('tax') || textLower.includes('price') || textLower.includes('bill') || textLower.includes('charge') || textLower.includes('vendor')) {
+      return '⚡';
+    }
+    if (textLower.includes('due') || textLower.includes('date') || textLower.includes('deadline') || textLower.includes('time') || textLower.includes('when') || textLower.includes('priority')) {
+      return '⏰';
+    }
+    if (textLower.includes('medication') || textLower.includes('rx') || textLower.includes('dosage') || textLower.includes('doctor') || textLower.includes('prescription') || textLower.includes('medicine')) {
+      return '💊';
+    }
+    if (textLower.includes('lab') || textLower.includes('test') || textLower.includes('flag') || textLower.includes('range') || textLower.includes('result') || textLower.includes('abnormal')) {
+      return '🔬';
+    }
+    if (textLower.includes('step') || textLower.includes('action') || textLower.includes('plan') || textLower.includes('task') || textLower.includes('assigned') || textLower.includes('note')) {
+      return '📋';
+    }
+    return '✨';
+  }
+
+  function getDefaultCategoryQuestions(categories) {
+    const defaultQs = [];
+    (categories || []).forEach(cat => {
+      switch (cat) {
+        case 'bills':
+          defaultQs.push('What is the grand total and payment due date?');
+          break;
+        case 'deadline':
+          defaultQs.push('What is the deadline date and required action?');
+          break;
+        case 'prescription':
+          defaultQs.push('What are the prescribed medications and dosages?');
+          break;
+        case 'labreport':
+          defaultQs.push('Are any lab test results flagged as high or low?');
+          break;
+        case 'plan':
+        default:
+          defaultQs.push('What are the key action steps and notes?');
+          break;
+      }
+    });
+
+    if (defaultQs.length === 1) {
+      const cat = categories[0] || 'plan';
+      if (cat === 'bills') {
+        defaultQs.push('Can you list all itemized charges and prices?');
+        defaultQs.push('What is the tax amount and vendor name?');
+      } else if (cat === 'deadline') {
+        defaultQs.push('Who is the issuing organization?');
+        defaultQs.push('What priority is assigned to this deadline?');
+      } else if (cat === 'prescription') {
+        defaultQs.push('How often should each medicine be taken?');
+        defaultQs.push('Who prescribed this and are there special instructions?');
+      } else if (cat === 'labreport') {
+        defaultQs.push('What are the specific numerical test values and ranges?');
+        defaultQs.push('Which test results were normal?');
+      } else {
+        defaultQs.push('Who is assigned to each task in the plan?');
+        defaultQs.push('What is the target completion date?');
+      }
+    }
+
+    return Array.from(new Set(defaultQs)).slice(0, 3);
   }
 
   function escapeHtml(text) {

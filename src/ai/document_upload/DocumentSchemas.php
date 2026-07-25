@@ -252,4 +252,63 @@ class DocumentSchemas
     {
         return self::getConfigForCategory($docType, $referenceDate);
     }
+
+    /**
+     * Stage 3: Dynamic Category-Aware Suggested Questions Config Generator
+     */
+    public static function getSuggestedQuestionsConfig(array $categories, array $extractedData, ?string $referenceDate = null): array
+    {
+        $dateContext = self::getSystemDateContext($referenceDate);
+        $catsList = implode(', ', $categories);
+        $extractedJsonStr = json_encode($extractedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        $systemInstruction = <<<EOT
+You are an expert document intelligence prompt designer for OffPaper. Your goal is to analyze the document image and its extracted data, and generate top 3 highly specific, document-grounded questions that will amaze the user with their precise accuracy.
+
+CRITICAL INSTRUCTION — MAKE QUESTIONS DEEPLY SPECIFIC (NOT GENERIC):
+Every generated question MUST explicitly mention actual entities extracted from this document — such as specific vendor names, item descriptions, dollar amounts, medication names, doctor/clinic names, test panel names, deadline titles, or task names!
+
+❌ FORBIDDEN GENERIC QUESTIONS (DO NOT GENERATE THESE):
+- "What is the grand total and payment due date?"
+- "What are the prescribed medications and dosages?"
+- "What is the deadline date and required action?"
+- "Are any lab test results flagged as high or low?"
+- "What are the key action steps and notes?"
+
+✅ DEEPLY SPECIFIC EXAMPLES (FOLLOW THIS PATTERN):
+- **bills**: "What is the tax amount and payment due date for the $[Total] bill from [Vendor Name]?", "Can you list the individual prices for [Item Name] and other line items?", "What vendor issued this $[Total] invoice?"
+- **deadline**: "What specific action is required before the [Due Date] deadline for [Deadline Title]?", "Who issued the [Deadline Title] notice and what is the priority?", "When is [Deadline Title] due?"
+- **prescription**: "How often should I take [Medication Name] prescribed by [Doctor/Clinic Name]?", "What special instructions did [Doctor Name] give for [Medication Name]?", "What is the dosage and duration for [Medication Name]?"
+- **labreport**: "Why is the [Test Name] result of [Value] flagged as abnormal/high/low by [Lab Name]?", "What is the reference range for [Test Name] on this report?", "Which lab tests were strictly within normal limits for [Patient Name]?"
+- **plan**: "What is step 1 ([First Task Description]) in [Plan Title]?", "Who is assigned to complete [Task Description]?", "What are all sequential action steps outlined in [Plan Title]?"
+
+SELECTION & CATEGORY RULES:
+1. Entity Embedding: Inject real names, titles, values, or items from the provided Extracted Data Context into every question.
+2. Multi-Category Balance: If multiple categories are detected (e.g. ['bills', 'deadline']), generate EXACTLY 1 highly specific question for EACH detected category (up to max 3 questions total).
+3. Single Category Limit: If only 1 category is present, generate the top 3 most specific, entity-infused questions for that category.
+4. Maximum 3 Items: Return strictly 3 question strings in the response schema array.
+
+{$dateContext}
+EOT;
+
+        $userPrompt = "Document Detected Categories: {$catsList}\n\nEXTRACTED DATA CONTEXT:\n{$extractedJsonStr}\n\nGenerate top 3 deeply specific, entity-infused questions about this exact document.";
+
+        return [
+            'systemInstruction' => $systemInstruction,
+            'prompt' => $userPrompt,
+            'responseSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'questions' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'string'
+                        ],
+                        'description' => 'Top deeply specific questions for the document (maximum 3 items).'
+                    ]
+                ],
+                'required' => ['questions']
+            ]
+        ];
+    }
 }

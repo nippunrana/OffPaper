@@ -65,6 +65,22 @@ try {
             $categories = $mapped;
         }
 
+        // Extract Suggested Questions (from DB column or extracted_json fallback)
+        $suggestedQuestions = [];
+        if (!empty($u['suggested_questions'])) {
+            if (is_array($u['suggested_questions'])) {
+                $suggestedQuestions = $u['suggested_questions'];
+            } else {
+                $decodedQ = json_decode($u['suggested_questions'], true);
+                if (is_array($decodedQ)) {
+                    $suggestedQuestions = $decodedQ;
+                }
+            }
+        }
+        if (empty($suggestedQuestions) && !empty($extracted['suggested_questions'])) {
+            $suggestedQuestions = is_array($extracted['suggested_questions']) ? $extracted['suggested_questions'] : [];
+        }
+
         // Increment stats
         $stats['total']++;
         foreach ($categories as $cat) {
@@ -75,6 +91,7 @@ try {
 
         $u['summary'] = $summary;
         $u['categories'] = $categories;
+        $u['suggested_questions'] = $suggestedQuestions;
         $u['extracted_data'] = $extracted['data'] ?? $extracted;
         $uploads[] = $u;
     }
@@ -305,6 +322,7 @@ require VIEWS . '/header.php';
                 'status' => $status,
                 'summary' => $summary,
                 'categories' => $cats,
+                'suggested_questions' => $doc['suggested_questions'] ?? [],
                 'extracted' => $ext,
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
           ?>

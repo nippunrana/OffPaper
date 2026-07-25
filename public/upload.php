@@ -156,6 +156,7 @@ send_response(true, 'Document captured and processed successfully!', [
         'source' => $source,
         'status' => $aiResult['status'] ?? 'pending',
         'doc_type' => $aiResult['doc_type'] ?? null,
+        'suggested_questions' => $aiResult['suggested_questions'] ?? null,
         'extracted_json' => $aiResult['extracted_json'] ?? null,
     ]
 ], 200, $isJson);

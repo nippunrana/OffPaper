@@ -93,17 +93,182 @@ class DocumentPipeline
             $extractedData[$category] = $extractionResponse['data'] ?? [];
         }
 
+        // Stage 3: Category-Aware Suggested Questions Generation
+        $suggestedQuestions = [];
+        try {
+            $questionsConfig = DocumentSchemas::getSuggestedQuestionsConfig($categories, $extractedData, $referenceDate);
+            $questionsResponse = $this->client->generateContent($questionsConfig['prompt'], [
+                'model' => $extractorModel,
+                'filePath' => $absoluteFilePath,
+                'mimeType' => $mimeType,
+                'systemInstruction' => $questionsConfig['systemInstruction'],
+                'responseSchema' => $questionsConfig['responseSchema'],
+                'temperature' => 0.3,
+            ]);
+
+            $rawQuestions = $questionsResponse['data']['questions'] ?? [];
+            if (is_array($rawQuestions)) {
+                foreach ($rawQuestions as $q) {
+                    if (is_string($q) && trim($q) !== '') {
+                        $suggestedQuestions[] = trim($q);
+                    }
+                }
+                $suggestedQuestions = array_values(array_unique($suggestedQuestions));
+                $suggestedQuestions = array_slice($suggestedQuestions, 0, 3);
+            }
+        } catch (Throwable $qErr) {
+            error_log('Error generating suggested questions in DocumentPipeline: ' . $qErr->getMessage());
+        }
+
+        if (empty($suggestedQuestions)) {
+            $suggestedQuestions = self::getDefaultQuestionsForCategories($categories, $extractedData);
+        }
+
         return [
             'success' => true,
             'summary' => $summary,
             'categories' => $categories,
             'extracted_data' => $extractedData,
+            'suggested_questions' => $suggestedQuestions,
             'classification' => $classificationResult,
             'models' => [
                 'classifier' => $classifierModel,
                 'extractor' => $extractorModel,
             ]
         ];
+    }
+
+    /**
+     * Fallback category-aware questions generator, incorporating extracted document entities.
+     */
+    public static function getDefaultQuestionsForCategories(array $categories, array $extractedData = []): array
+    {
+        $questions = [];
+
+        // Entity extractions
+        $bills = $extractedData['bills'] ?? [];
+        $deadline = $extractedData['deadline'] ?? [];
+        $prescription = $extractedData['prescription'] ?? [];
+        $lab = $extractedData['labreport'] ?? [];
+        $plan = $extractedData['plan'] ?? [];
+
+        $vendor = $bills['vendor_name'] ?? null;
+        $total = isset($bills['grand_total']) && is_numeric($bills['grand_total']) ? '$' . number_format((float)$bills['grand_total'], 2) : null;
+        $dueDate = $bills['payment_due_date'] ?? $deadline['due_date'] ?? null;
+
+        $dlTitle = $deadline['title'] ?? null;
+
+        $medName = $prescription['medications'][0]['name'] ?? null;
+        $doctor = $prescription['doctor_name'] ?? $prescription['clinic_hospital'] ?? null;
+
+        $labName = $lab['lab_name'] ?? null;
+        $testName = $lab['test_results'][0]['test_name'] ?? null;
+
+        $planTitle = $plan['plan_title'] ?? null;
+        $firstTask = $plan['action_items'][0]['task'] ?? null;
+
+        foreach ($categories as $cat) {
+            switch ($cat) {
+                case 'bills':
+                    if ($vendor && $total) {
+                        $questions[] = "What is the tax amount and due date for the {$total} bill from {$vendor}?";
+                    } elseif ($vendor) {
+                        $questions[] = "Can you breakdown the itemized charges and total for {$vendor}?";
+                    } else {
+                        $questions[] = 'What is the grand total, tax, and payment due date for this bill?';
+                    }
+                    break;
+
+                case 'deadline':
+                    if ($dlTitle && $dueDate) {
+                        $questions[] = "What action is required before the {$dueDate} deadline for {$dlTitle}?";
+                    } elseif ($dlTitle) {
+                        $questions[] = "What is the exact due date and priority for {$dlTitle}?";
+                    } else {
+                        $questions[] = 'What is the exact deadline date and required action?';
+                    }
+                    break;
+
+                case 'prescription':
+                    if ($medName && $doctor) {
+                        $questions[] = "What dosage instructions did {$doctor} prescribe for {$medName}?";
+                    } elseif ($medName) {
+                        $questions[] = "How often should I take {$medName} and for how long?";
+                    } else {
+                        $questions[] = 'What are the prescribed medications, dosages, and special instructions?';
+                    }
+                    break;
+
+                case 'labreport':
+                    if ($testName && $labName) {
+                        $questions[] = "What is the result and reference range for {$testName} from {$labName}?";
+                    } elseif ($testName) {
+                        $questions[] = "Are any test results like {$testName} flagged as high or low?";
+                    } else {
+                        $questions[] = 'Are any diagnostic test results on this report flagged as abnormal?';
+                    }
+                    break;
+
+                case 'plan':
+                default:
+                    if ($planTitle && $firstTask) {
+                        $questions[] = "What is step 1 ({$firstTask}) and the rest of {$planTitle}?";
+                    } elseif ($planTitle) {
+                        $questions[] = "What are the action steps and assignees listed in {$planTitle}?";
+                    } else {
+                        $questions[] = 'What are the key action steps, assignees, and target dates in this plan?';
+                    }
+                    break;
+            }
+        }
+
+        // Fill remaining questions up to 3 for single-category documents
+        if (count($questions) < 3 && count($categories) === 1) {
+            $cat = $categories[0] ?? 'plan';
+            if ($cat === 'bills') {
+                if ($vendor) {
+                    $questions[] = "Can you list all itemized line items and prices from {$vendor}?";
+                    $questions[] = "What payment methods or due dates are specified for {$vendor}?";
+                } else {
+                    $questions[] = 'Can you list all itemized line items and unit prices?';
+                    $questions[] = 'What payment due date or tax details are shown?';
+                }
+            } elseif ($cat === 'deadline') {
+                if ($dlTitle) {
+                    $questions[] = "Who is the issuing organization for {$dlTitle}?";
+                    $questions[] = "What priority and action steps apply to {$dlTitle}?";
+                } else {
+                    $questions[] = 'Who is the issuing organization for this deadline?';
+                    $questions[] = 'What priority level is assigned to this deadline?';
+                }
+            } elseif ($cat === 'prescription') {
+                if ($medName) {
+                    $questions[] = "Are there any special warnings or intake instructions for {$medName}?";
+                    $questions[] = "Who prescribed {$medName} and when is follow-up needed?";
+                } else {
+                    $questions[] = 'How often should each medicine be taken?';
+                    $questions[] = 'Who prescribed this and are there special instructions?';
+                }
+            } elseif ($cat === 'labreport') {
+                if ($labName) {
+                    $questions[] = "Which test panel items from {$labName} were strictly within normal limits?";
+                    $questions[] = "What overall diagnostic summary is provided by {$labName}?";
+                } else {
+                    $questions[] = 'What are the specific numerical test values and reference ranges?';
+                    $questions[] = 'Which test results were normal vs out-of-range?';
+                }
+            } else {
+                if ($planTitle) {
+                    $questions[] = "Who is assigned to complete tasks in {$planTitle}?";
+                    $questions[] = "What notes or target dates are attached to {$planTitle}?";
+                } else {
+                    $questions[] = 'Who is assigned to each task in the plan?';
+                    $questions[] = 'What is the target completion date or note?';
+                }
+            }
+        }
+
+        return array_slice(array_values(array_unique($questions)), 0, 3);
     }
 
     /**
@@ -142,18 +307,23 @@ class DocumentPipeline
             $result = $this->processDocument($absolutePath, $uploadRecord['mime_type'], $pipelineOptions);
 
             $primaryDocType = $result['categories'][0] ?? 'plan';
+            $suggestedQuestions = $result['suggested_questions'] ?? [];
             $extractedJson = json_encode([
                 'summary' => $result['summary'],
                 'categories' => $result['categories'],
                 'data' => $result['extracted_data'],
+                'suggested_questions' => $suggestedQuestions,
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+            $suggestedQuestionsJson = json_encode($suggestedQuestions, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
             // Update user_uploads table in PostgreSQL
             $updateStmt = $db->prepare('
                 UPDATE user_uploads
                 SET status = :status,
                     doc_type = :doc_type,
-                    extracted_json = :extracted_json
+                    extracted_json = :extracted_json,
+                    suggested_questions = :suggested_questions
                 WHERE id = :id
             ');
 
@@ -161,6 +331,7 @@ class DocumentPipeline
                 ':status' => 'processed',
                 ':doc_type' => $primaryDocType,
                 ':extracted_json' => $extractedJson,
+                ':suggested_questions' => $suggestedQuestionsJson,
                 ':id' => $uploadRecord['id'],
             ]);
 
@@ -170,10 +341,12 @@ class DocumentPipeline
                 'status' => 'processed',
                 'summary' => $result['summary'],
                 'categories' => $result['categories'],
+                'suggested_questions' => $suggestedQuestions,
                 'extracted_json' => [
                     'summary' => $result['summary'],
                     'categories' => $result['categories'],
                     'data' => $result['extracted_data'],
+                    'suggested_questions' => $suggestedQuestions,
                 ],
                 'pipeline_info' => $result,
             ];
