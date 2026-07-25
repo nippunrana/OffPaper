@@ -7,8 +7,8 @@ $display_name = $user['name'] ?: ucfirst(explode('@', $user['email'])[0]);
 
 $page_title = 'Dashboard';
 $page_nav = 'dashboard';
-$page_css = ['dashboard.css', 'scan.css'];
-$page_js = ['camera.js'];
+$page_css = ['dashboard.css', 'scan.css', 'chat.css'];
+$page_js = ['camera.js', 'doc-chat.js'];
 $body_class = 'page-dashboard';
 
 // Fetch user uploads from PostgreSQL
@@ -394,9 +394,15 @@ require VIEWS . '/header.php';
                 <?php endif; ?>
               </div>
 
-              <div class="doc-card__actions">
-                <button type="button" class="btn btn--secondary btn--sm btn--block" data-open-doc-detail='<?= $docJsonAttr ?>'>
-                  View Category JSON &amp; Summary
+              <div class="doc-card__actions doc-card__actions-grid">
+                <button type="button" class="btn btn--secondary btn--sm" data-open-doc-detail='<?= $docJsonAttr ?>'>
+                  View Details
+                </button>
+                <button type="button" class="btn btn--chat btn--sm" data-open-doc-chat='<?= $docJsonAttr ?>'>
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  Chat with AI
                 </button>
               </div>
             </div>
@@ -442,7 +448,7 @@ require VIEWS . '/header.php';
             <!-- Dynamic key-value fields rendered via JS -->
           </div>
 
-          <div class="doc-detail-actions">
+          <div class="doc-detail-actions" style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
             <a id="detailDownloadLink" href="#" target="_blank" download class="btn btn--secondary btn--sm">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -451,6 +457,12 @@ require VIEWS . '/header.php';
               </svg>
               View Full Original Image
             </a>
+            <button type="button" id="detailDocChatBtn" class="btn btn--chat btn--sm" data-open-doc-chat="">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              Chat with AI
+            </button>
           </div>
         </div>
       </div>
@@ -459,5 +471,6 @@ require VIEWS . '/header.php';
 </div>
 
 <?php require VIEWS . '/scan_modal.php'; ?>
+<?php require VIEWS . '/chat_modal.php'; ?>
 
 <?php require VIEWS . '/footer.php'; ?>

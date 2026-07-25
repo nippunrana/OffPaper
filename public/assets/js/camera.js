@@ -394,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const detailSummaryText = document.getElementById('detailSummaryText');
   const detailFieldsContainer = document.getElementById('detailFieldsContainer');
   const detailDownloadLink = document.getElementById('detailDownloadLink');
+  const detailDocChatBtn = document.getElementById('detailDocChatBtn');
 
   openDetailBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -416,6 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (detailDocImage) detailDocImage.src = doc.file_path || '';
     if (detailDocDate) detailDocDate.textContent = doc.created_at || '';
     if (detailDownloadLink) detailDownloadLink.href = doc.file_path || '#';
+    if (detailDocChatBtn) detailDocChatBtn.setAttribute('data-open-doc-chat', JSON.stringify(doc));
 
     // Status tag
     if (detailDocStatus) {
