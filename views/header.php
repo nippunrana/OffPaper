@@ -50,7 +50,6 @@ $user = current_user();
       <div class="site-nav__auth">
         <?php if ($user): ?>
           <span class="site-nav__user"><?= e($user['name'] ?? $user['email']) ?></span>
-          <a class="btn btn--secondary" href="<?= url('/dashboard.php') ?>">Dashboard</a>
           <form method="post" action="<?= url('/logout.php') ?>">
             <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
             <button type="submit" class="btn btn--ghost">Log out</button>
