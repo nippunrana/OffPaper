@@ -19,9 +19,10 @@ $user = current_user();
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($page_title) ?> — OffPaper</title>
 <meta name="description" content="<?= e($page_desc) ?>">
+<meta name="csrf-token" content="<?= e(csrf_token()) ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600" rel="stylesheet">
 <link rel="stylesheet" href="<?= asset('css/tokens.css') ?>">
 <link rel="stylesheet" href="<?= asset('css/base.css') ?>">
 <link rel="stylesheet" href="<?= asset('css/components.css') ?>">
@@ -29,7 +30,7 @@ $user = current_user();
 <link rel="stylesheet" href="<?= asset('css/' . e($file)) ?>">
 <?php endforeach; ?>
 </head>
-<body class="<?= e($body_class) ?>">
+<body class="<?= e($body_class) ?>" data-upload-url="<?= url('/upload.php') ?>">
 <a class="skip-link" href="#main">Skip to content</a>
 
 <header class="site-header">

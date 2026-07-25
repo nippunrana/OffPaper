@@ -284,8 +284,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
+        const targetUploadUrl = document.body.dataset.uploadUrl || 'upload.php';
+        const currentCsrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
         const formData = new FormData();
-        formData.append('csrf', csrfToken);
+        formData.append('csrf', currentCsrfToken);
 
         if (capturedBlob) {
           formData.append('photo', capturedBlob, 'camera_capture_' + Date.now() + '.jpg');
@@ -297,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error('No image selected to upload.');
         }
 
-        const response = await fetch(uploadUrl, {
+        const response = await fetch(targetUploadUrl, {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -306,7 +309,14 @@ document.addEventListener('DOMContentLoaded', () => {
           body: formData
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseErr) {
+          console.error('Server returned non-JSON response:', responseText);
+          throw new Error('Server returned invalid response (Status ' + response.status + ').');
+        }
 
         if (response.ok && data.success) {
           if (uploadStatus) {
@@ -337,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
 
   // If on standalone scan.php page without modal, init camera directly
   if (!scanModal && cameraContainer) {
