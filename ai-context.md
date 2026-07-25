@@ -11,6 +11,7 @@ Early planning stage — no code written yet.
 
 ## Tech Stack (decided)
 - **Backend:** PHP, no framework, no build step.
+- **Database:** PostgreSQL (DB Name: `offpapper`, DB User: `offpapper`, Host: `localhost`, Port: `5432`). Access via PHP PDO (`pdo_pgsql`). Configuration loaded from `.env` (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`).
 - **Frontend:** Vanilla HTML5, CSS, JavaScript. No bundlers, no build tools, no JS
   framework (no React/Vue/webpack/npm build pipeline).
 - **Camera capture:** Default to `<input type="file" accept="image/*"
