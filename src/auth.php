@@ -68,13 +68,32 @@ function auth_login(string $email, string $password): array
     return ['ok' => true];
 }
 
-function auth_login_with_google(array $profile): array
+function auth_login_with_google(array $profile, array $tokenData = []): array
 {
     $sub = $profile['sub'];
     $email = normalize_email($profile['email']);
 
+    $accessToken = $tokenData['access_token'] ?? null;
+    $refreshToken = $tokenData['refresh_token'] ?? null;
+    $expiresIn = (int) ($tokenData['expires_in'] ?? 3600);
+    $expiresAt = date('Y-m-d H:i:sP', time() + $expiresIn);
+
     $user = find_user_by_google_sub($sub);
     if ($user !== null) {
+        $sql = 'UPDATE users SET google_access_token = :access_token, google_token_expires_at = :expires_at';
+        $params = [
+            'access_token' => $accessToken,
+            'expires_at'   => $expiresAt,
+            'id'           => $user['id'],
+        ];
+        if ($refreshToken !== null) {
+            $sql .= ', google_refresh_token = :refresh_token';
+            $params['refresh_token'] = $refreshToken;
+        }
+        $sql .= ' WHERE id = :id';
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+
         login_user((int) $user['id']);
         return ['ok' => true];
     }
@@ -85,19 +104,36 @@ function auth_login_with_google(array $profile): array
 
     $user = find_user_by_email($email);
     if ($user !== null) {
-        $stmt = db()->prepare('UPDATE users SET google_sub = :sub WHERE id = :id');
-        $stmt->execute(['sub' => $sub, 'id' => $user['id']]);
+        $sql = 'UPDATE users SET google_sub = :sub, google_access_token = :access_token, google_token_expires_at = :expires_at';
+        $params = [
+            'sub'          => $sub,
+            'access_token' => $accessToken,
+            'expires_at'   => $expiresAt,
+            'id'           => $user['id'],
+        ];
+        if ($refreshToken !== null) {
+            $sql .= ', google_refresh_token = :refresh_token';
+            $params['refresh_token'] = $refreshToken;
+        }
+        $sql .= ' WHERE id = :id';
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+
         login_user((int) $user['id']);
         return ['ok' => true];
     }
 
     $stmt = db()->prepare(
-        'INSERT INTO users (email, name, google_sub) VALUES (:email, :name, :sub) RETURNING id'
+        'INSERT INTO users (email, name, google_sub, google_access_token, google_refresh_token, google_token_expires_at) 
+         VALUES (:email, :name, :sub, :access_token, :refresh_token, :expires_at) RETURNING id'
     );
     $stmt->execute([
-        'email' => $email,
-        'name' => $profile['name'] ?? null,
-        'sub' => $sub,
+        'email'         => $email,
+        'name'          => $profile['name'] ?? null,
+        'sub'           => $sub,
+        'access_token'  => $accessToken,
+        'refresh_token' => $refreshToken,
+        'expires_at'   => $expiresAt,
     ]);
     login_user((int) $stmt->fetchColumn());
     return ['ok' => true];

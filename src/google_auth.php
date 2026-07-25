@@ -7,15 +7,16 @@ function google_auth_url(string $state): string
         'response_type' => 'code',
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
-        'scope' => 'openid email profile',
+        'scope' => 'openid email profile https://www.googleapis.com/auth/calendar.events',
+        'access_type' => 'offline',
+        'prompt' => 'consent',
         'state' => $state,
-        'prompt' => 'select_account',
     ];
 
     return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
 }
 
-function google_exchange_code(string $code): ?string
+function google_exchange_code(string $code): ?array
 {
     $ch = curl_init('https://oauth2.googleapis.com/token');
     curl_setopt_array($ch, [
@@ -38,7 +39,15 @@ function google_exchange_code(string $code): ?string
     }
 
     $data = json_decode($response, true);
-    return $data['access_token'] ?? null;
+    if (empty($data['access_token'])) {
+        return null;
+    }
+
+    return [
+        'access_token'  => $data['access_token'],
+        'refresh_token' => $data['refresh_token'] ?? null,
+        'expires_in'    => (int) ($data['expires_in'] ?? 3600),
+    ];
 }
 
 function google_fetch_profile(string $accessToken): ?array

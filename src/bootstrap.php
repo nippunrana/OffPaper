@@ -17,6 +17,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/google_auth.php';
+require_once __DIR__ . '/google_calendar.php';
 
 ini_set('session.use_strict_mode', '1');
 session_set_cookie_params([
