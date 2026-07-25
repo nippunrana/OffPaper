@@ -353,4 +353,182 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!scanModal && cameraContainer) {
     initCamera();
   }
+
+  // --- DASHBOARD CATEGORY TAB FILTERING ---
+  const tabBtns = document.querySelectorAll('.dash-tab');
+  const docCards = document.querySelectorAll('.doc-card');
+
+  tabBtns.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabBtns.forEach(b => {
+        b.classList.remove('is-active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('is-active');
+      tab.setAttribute('aria-selected', 'true');
+
+      const filter = tab.dataset.filter;
+      docCards.forEach(card => {
+        const cardType = card.dataset.docType;
+        if (filter === 'all' || cardType === filter) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // --- DOCUMENT DETAIL MODAL CONTROLLER ---
+  const docDetailModal = document.getElementById('docDetailModal');
+  const closeDocDetailBtn = document.getElementById('closeDocDetailBtn');
+  const openDetailBtns = document.querySelectorAll('[data-open-doc-detail]');
+
+  const detailDocImage = document.getElementById('detailDocImage');
+  const detailDocBadge = document.getElementById('detailDocBadge');
+  const detailDocStatus = document.getElementById('detailDocStatus');
+  const detailDocDate = document.getElementById('detailDocDate');
+  const detailDocHeading = document.getElementById('detailDocHeading');
+  const detailFieldsContainer = document.getElementById('detailFieldsContainer');
+  const detailDownloadLink = document.getElementById('detailDownloadLink');
+
+  openDetailBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const rawData = btn.getAttribute('data-open-doc-detail');
+      if (!rawData) return;
+
+      try {
+        const doc = JSON.parse(rawData);
+        openDocumentDetail(doc);
+      } catch (err) {
+        console.error('Failed to parse document detail JSON:', err);
+      }
+    });
+  });
+
+  function openDocumentDetail(doc) {
+    if (!docDetailModal) return;
+
+    if (detailDocImage) detailDocImage.src = doc.file_path || '';
+    if (detailDocDate) detailDocDate.textContent = doc.created_at || '';
+    if (detailDownloadLink) detailDownloadLink.href = doc.file_path || '#';
+
+    // Status badge
+    if (detailDocStatus) {
+      detailDocStatus.className = 'status-tag';
+      if (doc.status === 'processed') {
+        detailDocStatus.classList.add('status-tag--success');
+        detailDocStatus.textContent = '✓ Processed';
+      } else if (doc.status === 'error') {
+        detailDocStatus.classList.add('status-tag--error');
+        detailDocStatus.textContent = '⚠️ Processing Error';
+      } else {
+        detailDocStatus.classList.add('status-tag--pending');
+        detailDocStatus.textContent = '⏳ Processing...';
+      }
+    }
+
+    // Doc Type Badge & Icon
+    if (detailDocBadge) {
+      let icon = '📄';
+      let label = 'General Document';
+      let typeClass = 'doc-type--general';
+
+      if (doc.doc_type === 'bill') {
+        icon = '⚡';
+        label = 'Bill / Deadline';
+        typeClass = 'doc-type--bill';
+      } else if (doc.doc_type === 'prescription') {
+        icon = '💊';
+        label = 'Health Record';
+        typeClass = 'doc-type--health';
+      } else if (doc.doc_type === 'handwritten_note') {
+        icon = '✏️';
+        label = 'Handwritten Note';
+        typeClass = 'doc-type--note';
+      }
+
+      detailDocBadge.className = `doc-card__badge ${typeClass}`;
+      detailDocBadge.innerHTML = `<span class="doc-card__badge-icon">${icon}</span> ${label}`;
+    }
+
+    // Title & Fields
+    const ext = doc.extracted || {};
+    let title = doc.filename || 'Document';
+
+    if (doc.doc_type === 'bill') {
+      const vendor = ext.biller_name || ext.vendor_name || ext.payee || ext.vendor;
+      const amt = ext.amount_due || ext.total_amount || ext.amount;
+      if (vendor) title = `${vendor}${amt ? ' (' + amt + ')' : ''}`;
+    } else if (doc.doc_type === 'prescription') {
+      const med = ext.medication_name || ext.medication || ext.drug;
+      const docName = ext.doctor_name || ext.prescriber || ext.provider;
+      if (med) title = `${med}${docName ? ' (by ' + docName + ')' : ''}`;
+    } else if (doc.doc_type === 'handwritten_note') {
+      if (ext.title || ext.heading) title = ext.title || ext.heading;
+    } else if (ext.title || ext.document_title) {
+      title = ext.title || ext.document_title;
+    }
+
+    if (detailDocHeading) detailDocHeading.textContent = title;
+
+    // Render extracted fields
+    if (detailFieldsContainer) {
+      detailFieldsContainer.innerHTML = '';
+
+      if (Object.keys(ext).length === 0) {
+        detailFieldsContainer.innerHTML = '<p class="doc-card__text-preview">No extracted AI data available yet.</p>';
+      } else {
+        for (const [key, val] of Object.entries(ext)) {
+          if (val === null || val === undefined || val === '') continue;
+
+          const itemEl = document.createElement('div');
+          itemEl.className = 'doc-detail-item';
+
+          const formattedKey = key.replace(/_/g, ' ').toUpperCase();
+          const formattedVal = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+
+          itemEl.innerHTML = `
+            <span class="doc-detail-item__label">${formattedKey}</span>
+            <span class="doc-detail-item__value">${formattedVal}</span>
+          `;
+          detailFieldsContainer.appendChild(itemEl);
+        }
+      }
+    }
+
+    docDetailModal.style.display = 'flex';
+    docDetailModal.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDocumentDetail() {
+    if (!docDetailModal) return;
+    docDetailModal.style.display = 'none';
+    docDetailModal.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  if (closeDocDetailBtn) {
+    closeDocDetailBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeDocumentDetail();
+    });
+  }
+
+  if (docDetailModal) {
+    docDetailModal.addEventListener('click', (e) => {
+      if (e.target === docDetailModal) {
+        closeDocumentDetail();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && docDetailModal && docDetailModal.classList.contains('is-open')) {
+      closeDocumentDetail();
+    }
+  });
 });
+
