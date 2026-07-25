@@ -12,16 +12,16 @@ $page_js = $page_js ?? [];
   <div class="container site-footer__inner">
     <p>&copy; <?= date('Y') ?> OffPaper. Get your life off paper.</p>
     <ul class="site-footer__links">
-      <li><a href="/">Home</a></li>
-      <li><a href="/login.php">Log in</a></li>
-      <li><a href="/login.php?mode=signup">Get started</a></li>
+      <li><a href="<?= url('/') ?>">Home</a></li>
+      <li><a href="<?= url('/login.php') ?>">Log in</a></li>
+      <li><a href="<?= url('/login.php?mode=signup') ?>">Get started</a></li>
     </ul>
   </div>
 </footer>
 
-<script src="/assets/js/nav.js" defer></script>
+<script src="<?= asset('js/nav.js') ?>" defer></script>
 <?php foreach ($page_js as $file): ?>
-<script src="/assets/js/<?= e($file) ?>" defer></script>
+<script src="<?= asset('js/' . e($file)) ?>" defer></script>
 <?php endforeach; ?>
 </body>
 </html>

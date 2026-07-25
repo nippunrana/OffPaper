@@ -22,11 +22,11 @@ $user = current_user();
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/tokens.css">
-<link rel="stylesheet" href="/assets/css/base.css">
-<link rel="stylesheet" href="/assets/css/components.css">
+<link rel="stylesheet" href="<?= asset('css/tokens.css') ?>">
+<link rel="stylesheet" href="<?= asset('css/base.css') ?>">
+<link rel="stylesheet" href="<?= asset('css/components.css') ?>">
 <?php foreach ($page_css as $file): ?>
-<link rel="stylesheet" href="/assets/css/<?= e($file) ?>">
+<link rel="stylesheet" href="<?= asset('css/' . e($file)) ?>">
 <?php endforeach; ?>
 </head>
 <body class="<?= e($body_class) ?>">
@@ -34,30 +34,30 @@ $user = current_user();
 
 <header class="site-header">
   <div class="container site-header__inner">
-    <a class="logo" href="/">
+    <a class="logo" href="<?= url('/') ?>">
       <span class="logo__mark" aria-hidden="true"></span>
       OffPaper
     </a>
 
     <nav class="site-nav" aria-label="Primary">
       <ul class="site-nav__links">
-        <li><a href="/" <?= $page_nav === 'home' ? 'class="is-active" aria-current="page"' : '' ?>>Home</a></li>
+        <li><a href="<?= url('/') ?>" <?= $page_nav === 'home' ? 'class="is-active" aria-current="page"' : '' ?>>Home</a></li>
         <?php if ($user): ?>
-        <li><a href="/dashboard.php" <?= $page_nav === 'dashboard' ? 'class="is-active" aria-current="page"' : '' ?>>Dashboard</a></li>
+        <li><a href="<?= url('/dashboard.php') ?>" <?= $page_nav === 'dashboard' ? 'class="is-active" aria-current="page"' : '' ?>>Dashboard</a></li>
         <?php endif; ?>
       </ul>
 
       <div class="site-nav__auth">
         <?php if ($user): ?>
           <span class="site-nav__user"><?= e($user['name'] ?? $user['email']) ?></span>
-          <a class="btn btn--secondary" href="/dashboard.php">Dashboard</a>
-          <form method="post" action="/logout.php">
+          <a class="btn btn--secondary" href="<?= url('/dashboard.php') ?>">Dashboard</a>
+          <form method="post" action="<?= url('/logout.php') ?>">
             <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
             <button type="submit" class="btn btn--ghost">Log out</button>
           </form>
         <?php else: ?>
-          <a class="btn btn--ghost" href="/login.php">Log in</a>
-          <a class="btn btn--primary" href="/login.php?mode=signup">Get started</a>
+          <a class="btn btn--ghost" href="<?= url('/login.php') ?>">Log in</a>
+          <a class="btn btn--primary" href="<?= url('/login.php?mode=signup') ?>">Get started</a>
         <?php endif; ?>
       </div>
 
@@ -68,16 +68,16 @@ $user = current_user();
   </div>
 
   <div class="site-nav__mobile-panel" id="navMobilePanel">
-    <a href="/">Home</a>
+    <a href="<?= url('/') ?>">Home</a>
     <?php if ($user): ?>
-      <a href="/dashboard.php">Dashboard</a>
-      <form method="post" action="/logout.php">
+      <a href="<?= url('/dashboard.php') ?>">Dashboard</a>
+      <form method="post" action="<?= url('/logout.php') ?>">
         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
         <button type="submit" class="btn btn--secondary btn--block">Log out</button>
       </form>
     <?php else: ?>
-      <a href="/login.php">Log in</a>
-      <a class="btn btn--primary btn--block" href="/login.php?mode=signup">Get started</a>
+      <a href="<?= url('/login.php') ?>">Log in</a>
+      <a class="btn btn--primary btn--block" href="<?= url('/login.php?mode=signup') ?>">Get started</a>
     <?php endif; ?>
   </div>
 </header>

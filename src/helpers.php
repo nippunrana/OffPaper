@@ -6,9 +6,60 @@ function e(?string $value): string
     return htmlspecialchars($value ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+function base_path(): string
+{
+    static $base = null;
+    if ($base !== null) {
+        return $base;
+    }
+
+    $envPath = env('APP_BASE_PATH');
+    if ($envPath !== null) {
+        $base = rtrim($envPath, '/');
+        return $base;
+    }
+
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    if (preg_match('#^(.*?/offpaper)#', $scriptName, $m)) {
+        $base = $m[1];
+        return $base;
+    }
+
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    if (preg_match('#^(.*?/offpaper)#', strtok($requestUri, '?'), $m)) {
+        $base = $m[1];
+        return $base;
+    }
+
+    $base = '';
+    return $base;
+}
+
+function url(string $path = ''): string
+{
+    if (preg_match('#^https?://#i', $path)) {
+        return $path;
+    }
+    $base = base_path();
+    $path = '/' . ltrim($path, '/');
+    if ($path === '/') {
+        return $base !== '' ? $base . '/' : '/';
+    }
+    return $base . $path;
+}
+
+function asset(string $path): string
+{
+    $relativePath = '/assets/' . ltrim($path, '/');
+    $fullPath = APP_ROOT . '/public' . $relativePath;
+    $v = file_exists($fullPath) ? filemtime($fullPath) : '1';
+    return url($relativePath . '?v=' . $v);
+}
+
 function redirect(string $path): never
 {
-    header('Location: ' . $path, true, 303);
+    $target = url($path);
+    header('Location: ' . $target, true, 303);
     exit;
 }
 

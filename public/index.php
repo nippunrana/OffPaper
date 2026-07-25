@@ -20,7 +20,7 @@ require VIEWS . '/header.php';
         and OffPaper reads it, files it, and reminds you before it's late.
       </p>
       <div class="hero__actions">
-        <a class="btn btn--primary btn--lg" href="/login.php?mode=signup">Get started free</a>
+        <a class="btn btn--primary btn--lg" href="<?= url('/login.php?mode=signup') ?>">Get started free</a>
         <p class="hero__fud">No credit card. About 30 seconds to start.</p>
       </div>
     </div>
@@ -182,7 +182,7 @@ require VIEWS . '/header.php';
   <div class="container final-cta__inner">
     <h2>Ready to get your life off paper?</h2>
     <p>No credit card required to get started.</p>
-    <a class="btn btn--primary btn--lg" href="/login.php?mode=signup">Get started free</a>
+    <a class="btn btn--primary btn--lg" href="<?= url('/login.php?mode=signup') ?>">Get started free</a>
   </div>
 </section>
 
