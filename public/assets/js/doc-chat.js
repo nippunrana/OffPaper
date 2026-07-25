@@ -15,12 +15,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('docChatSendBtn');
   const quickPromptsContainer = document.getElementById('chatQuickPrompts');
   const finalisePlanBtn = document.getElementById('docChatFinalisePlanBtn');
-  const planBanner = document.getElementById('docChatPlanBanner');
+  const newChatBtn = document.getElementById('docChatNewChatBtn');
+
+  // Plan panel elements
+  const planPill          = document.getElementById('docChatPlanPill');
+  const planPillDate      = document.getElementById('planPillDate');
+  const splitBody         = document.getElementById('docChatSplitBody');
+  const planPanel         = document.getElementById('docChatPlanPanel');
+  const planPanelBody     = document.getElementById('planPanelBody');
+  const planPanelDate     = document.getElementById('planPanelDate');
+  const planVersionTabs   = document.getElementById('planVersionTabs');
+  const planVersionTabList = document.getElementById('planVersionTabList');
+  const planPanelCloseBtn = document.getElementById('docChatPlanPanelClose');
 
   let currentDocument = null;
   let chatMode = null; // null for normal chat, 'plan_assist' for Improve Plan
   let newMessageSentInSession = false;
-  const newChatBtn = document.getElementById('docChatNewChatBtn');
+  let allPlanSnapshots = []; // cached snapshots for version tabs
 
   // Listen for open chat triggers on cards or detail modals
   document.addEventListener('click', (e) => {
@@ -150,12 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
       finalisePlanBtn.style.display = chatMode === 'plan_assist' ? 'inline-flex' : 'none';
     }
 
-    // If plan_assist, check for a previously saved plan snapshot
+    // Reset plan panel to closed state on every open
+    closePlanPanel();
+    allPlanSnapshots = [];
+    if (planPill) planPill.style.display = 'none';
+
+    // If plan_assist, load plan snapshots
     if (chatMode === 'plan_assist') {
       loadPlanSnapshot(doc);
-    } else if (planBanner) {
-      planBanner.style.display = 'none';
-      planBanner.innerHTML = '';
     }
 
     // Show modal
@@ -331,6 +344,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ----------------------------------------------------------------
+  // Plan Panel helpers
+  // ----------------------------------------------------------------
+  function openPlanPanel() {
+    if (!splitBody || !planPanel) return;
+    splitBody.classList.add('plan-panel--open');
+    planPanel.style.display = 'flex';
+  }
+
+  function closePlanPanel() {
+    if (!splitBody || !planPanel) return;
+    splitBody.classList.remove('plan-panel--open');
+    planPanel.style.display = 'none';
+  }
+
+  // Plan pill click — opens panel
+  if (planPill) {
+    planPill.addEventListener('click', () => openPlanPanel());
+  }
+
+  // Plan panel close button
+  if (planPanelCloseBtn) {
+    planPanelCloseBtn.addEventListener('click', () => closePlanPanel());
+  }
+
+  // ----------------------------------------------------------------
   // Finalise Plan — synthesise chat → save snapshot → clear & display
   // ----------------------------------------------------------------
   async function triggerFinalisePlan() {
@@ -357,7 +395,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       hideTyping();
 
-      // Reset typing text back to default
       if (chatTyping) {
         const typingText = chatTyping.querySelector('.typing-text');
         if (typingText) typingText.textContent = 'AI is reading document details...';
@@ -375,10 +412,18 @@ document.addEventListener('DOMContentLoaded', () => {
       newMessageSentInSession = false;
       if (newChatBtn) newChatBtn.style.display = 'none';
 
-      renderFinalisedPlan(data.plan_text, data.finalised_at);
+      // Prepend to cached snapshots (newest first)
+      allPlanSnapshots.unshift({ plan_text: data.plan_text, finalised_at: data.finalised_at });
+      allPlanSnapshots = allPlanSnapshots.slice(0, 3);
 
-      // Refresh the plan banner so it shows the newest snapshot
-      displayPlanSnapshot(data.plan_text, data.finalised_at);
+      // Show plan in panel and refresh pill
+      showPlanInPanel(data.plan_text, data.finalised_at, 0);
+      updatePlanPill(data.finalised_at);
+      renderVersionTabs(allPlanSnapshots, 0);
+      openPlanPanel();
+
+      // Brief confirmation in chat
+      renderFinaliseConfirmation(data.finalised_at);
 
     } catch (err) {
       console.error('Finalise Plan error:', err);
@@ -397,17 +442,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Wire the Finalise Plan button
   if (finalisePlanBtn) {
-    finalisePlanBtn.addEventListener('click', () => {
-      triggerFinalisePlan();
-    });
+    finalisePlanBtn.addEventListener('click', () => triggerFinalisePlan());
   }
 
-  // Load the latest plan snapshot from extracted_json (via chat GET response) and show in banner
-  async function loadPlanSnapshot(doc) {
-    if (!planBanner) return;
-    planBanner.style.display = 'none';
-    planBanner.innerHTML = '';
+  // ----------------------------------------------------------------
+  // Plan snapshot: load, display, helpers
+  // ----------------------------------------------------------------
 
+  // Load snapshots from API and populate pill + panel
+  async function loadPlanSnapshot(doc) {
     try {
       const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
       const docId = doc.id || 0;
@@ -420,65 +463,97 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (!data.ok) return;
 
-      // plan_snapshots are returned by the GET endpoint
       const snapshots = data.plan_snapshots || null;
+      if (!Array.isArray(snapshots) || snapshots.length === 0) return;
 
-      if (Array.isArray(snapshots) && snapshots.length > 0) {
-        const latest = snapshots[0];
-        displayPlanSnapshot(latest.plan_text, latest.finalised_at);
-      }
+      allPlanSnapshots = snapshots;
+      const latest = snapshots[0];
+
+      updatePlanPill(latest.finalised_at);
+      showPlanInPanel(latest.plan_text, latest.finalised_at, 0);
+      renderVersionTabs(snapshots, 0);
+
     } catch (err) {
       console.error('Error loading plan snapshot:', err);
     }
   }
 
-  function displayPlanSnapshot(planText, finalisedAt) {
-    if (!planBanner) return;
-    const dateStr = finalisedAt ? new Date(finalisedAt).toLocaleString([], {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    }) : '';
-
-    planBanner.innerHTML = `
-      <div class="plan-banner__inner">
-        <div class="plan-banner__header">
-          <span class="plan-banner__icon">📋</span>
-          <span class="plan-banner__title">Latest Saved Plan</span>
-          ${dateStr ? `<span class="plan-banner__date">Updated ${escapeHtml(dateStr)}</span>` : ''}
-        </div>
-        <div class="plan-banner__body">${formatMarkdownResponse(planText)}</div>
-      </div>
-    `;
-    planBanner.style.display = 'block';
+  // Update the 1-line pill in the header
+  function updatePlanPill(finalisedAt) {
+    if (!planPill) return;
+    if (planPillDate) {
+      const dateStr = finalisedAt ? new Date(finalisedAt).toLocaleDateString([], {
+        month: 'short', day: 'numeric'
+      }) : '';
+      planPillDate.textContent = dateStr ? `· ${dateStr}` : '';
+    }
+    planPill.style.display = 'inline-flex';
   }
 
-  function renderFinalisedPlan(planText, finalisedAt) {
+  // Render plan content into the right panel
+  function showPlanInPanel(planText, finalisedAt, activeIdx) {
+    if (!planPanelBody) return;
+
+    // Update date badge
+    if (planPanelDate) {
+      const dateStr = finalisedAt ? new Date(finalisedAt).toLocaleString([], {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      }) : '';
+      planPanelDate.textContent = dateStr ? `Saved ${dateStr}` : '';
+    }
+
+    const contentHtml = formatPlanMarkdown(planText);
+    planPanelBody.innerHTML = `<div class="plan-panel__content" aria-live="polite">${contentHtml}</div>`;
+    planPanelBody.scrollTop = 0;
+  }
+
+  // Render version tabs (up to 3)
+  function renderVersionTabs(snapshots, activeIdx) {
+    if (!planVersionTabs || !planVersionTabList) return;
+    if (snapshots.length <= 1) {
+      planVersionTabs.style.display = 'none';
+      return;
+    }
+    planVersionTabs.style.display = 'flex';
+    planVersionTabList.innerHTML = '';
+    snapshots.forEach((snap, i) => {
+      const dateStr = snap.finalised_at ? new Date(snap.finalised_at).toLocaleDateString([], {
+        month: 'short', day: 'numeric'
+      }) : `v${i + 1}`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plan-version-tab' + (i === activeIdx ? ' is-active' : '');
+      btn.textContent = i === 0 ? `Latest · ${dateStr}` : dateStr;
+      btn.setAttribute('aria-label', `Plan version ${i + 1}`);
+      btn.addEventListener('click', () => {
+        showPlanInPanel(snap.plan_text, snap.finalised_at, i);
+        renderVersionTabs(snapshots, i);
+      });
+      planVersionTabList.appendChild(btn);
+    });
+  }
+
+  // Brief confirmation message in chat after finalising
+  function renderFinaliseConfirmation(finalisedAt) {
     if (!chatMessages) return;
     chatMessages.innerHTML = '';
-
     const dateStr = finalisedAt ? new Date(finalisedAt).toLocaleString([], {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    }) : getCurrentTimeFormatted();
-
-    const formattedHtml = formatMarkdownResponse(planText);
-    const wrapperHtml = `
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    }) : '';
+    const html = `
       <div class="plan-snapshot-card">
         <div class="plan-snapshot-card__header">
           <span class="plan-snapshot-card__icon">🎯</span>
-          <span class="plan-snapshot-card__title">Finalised Plan</span>
-          <span class="plan-snapshot-badge">Saved ${escapeHtml(dateStr)}</span>
+          <span class="plan-snapshot-card__title">Plan Finalised</span>
+          ${dateStr ? `<span class="plan-snapshot-badge">Saved ${escapeHtml(dateStr)}</span>` : ''}
         </div>
-        <div class="plan-snapshot-card__body">${formattedHtml}</div>
+        <div class="plan-snapshot-card__body">
+          <p>Your plan has been synthesised and saved. <strong>View it in the panel →</strong></p>
+          <p style="font-size:0.82rem; color:var(--color-text-muted); margin-top:0.4rem;">Continue chatting here to refine further, then finalise again to update.</p>
+        </div>
       </div>
-      <p style="font-size:0.82rem; color:var(--color-text-muted); margin-top:0.5rem; text-align:center;">🚀 Plan locked in! Continue chatting to refine further.</p>
     `;
-
-    appendMessage({
-      sender: 'ai',
-      html: wrapperHtml,
-      time: dateStr
-    });
+    appendMessage({ sender: 'ai', html, time: dateStr || getCurrentTimeFormatted() });
   }
 
   async function loadExistingChatHistory(doc) {
@@ -563,6 +638,60 @@ document.addEventListener('DOMContentLoaded', () => {
       html += listType === 'ul' ? '</ul>' : '</ol>';
     }
 
+    return html;
+  }
+
+  // Plan-panel markdown formatter — handles ## / ### headings from AI synthesis output
+  function formatPlanMarkdown(rawText) {
+    if (!rawText) return '';
+    let escaped = escapeHtml(rawText);
+
+    // Bold & italic
+    escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    const lines = escaped.split('\n');
+    let inList = false;
+    let listType = 'ul';
+    let html = '';
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+
+      // h2 headings: ## Emoji Title
+      if (/^##\s/.test(trimmed)) {
+        if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+        html += `<h2>${trimmed.replace(/^##\s/, '')}</h2>`;
+
+      // h3 headings: ### Title
+      } else if (/^###\s/.test(trimmed)) {
+        if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+        html += `<h3>${trimmed.replace(/^###\s/, '')}</h3>`;
+
+      // Bullet lists
+      } else if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+        if (!inList || listType !== 'ul') {
+          if (inList) html += listType === 'ul' ? '</ul>' : '</ol>';
+          html += '<ul>'; inList = true; listType = 'ul';
+        }
+        html += `<li>${trimmed.substring(2).trim()}</li>`;
+
+      // Ordered lists
+      } else if (/^\d+\.\s/.test(trimmed)) {
+        if (!inList || listType !== 'ol') {
+          if (inList) html += listType === 'ul' ? '</ul>' : '</ol>';
+          html += '<ol>'; inList = true; listType = 'ol';
+        }
+        html += `<li>${trimmed.replace(/^\d+\.\s/, '').trim()}</li>`;
+
+      // Paragraphs
+      } else {
+        if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+        if (trimmed.length > 0) html += `<p>${trimmed}</p>`;
+      }
+    });
+
+    if (inList) html += listType === 'ul' ? '</ul>' : '</ol>';
     return html;
   }
 
