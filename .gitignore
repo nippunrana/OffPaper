@@ -15,3 +15,5 @@ build/
 # Logs & OS
 *.log
 .DS_Store
+
+.agents/
