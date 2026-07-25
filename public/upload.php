@@ -110,6 +110,8 @@ if (file_put_contents($targetAbsolutePath, $binaryData) === false) {
 
 // Record in database if DB table user_uploads exists
 $dbId = null;
+$aiResult = null;
+
 try {
     $db = db();
     $stmt = $db->prepare('
@@ -129,11 +131,20 @@ try {
         ':status' => 'pending',
     ]);
     $dbId = $stmt->fetchColumn();
+
+    // Perform AI Extraction using Gemini multi-stage pipeline
+    if ($dbId) {
+        try {
+            $aiResult = ai_process_upload($dbId);
+        } catch (Throwable $aiException) {
+            error_log('AI processing error for upload ID ' . $dbId . ': ' . $aiException->getMessage());
+        }
+    }
 } catch (Throwable $e) {
     error_log('Database record insertion for upload failed: ' . $e->getMessage());
 }
 
-send_response(true, 'Document captured and saved successfully!', [
+send_response(true, 'Document captured and processed successfully!', [
     'upload' => [
         'id' => $dbId,
         'uuid' => $fileUuid,
@@ -143,5 +154,8 @@ send_response(true, 'Document captured and saved successfully!', [
         'file_size' => $fileSize,
         'mime_type' => $mimeType,
         'source' => $source,
+        'status' => $aiResult['status'] ?? 'pending',
+        'doc_type' => $aiResult['doc_type'] ?? null,
+        'extracted_json' => $aiResult['extracted_json'] ?? null,
     ]
 ], 200, $isJson);

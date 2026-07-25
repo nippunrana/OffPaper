@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS user_uploads (
     mime_type         TEXT        NOT NULL,         -- e.g. image/jpeg, image/png
     source            TEXT        NOT NULL DEFAULT 'camera', -- 'camera' or 'file_input'
     status            TEXT        NOT NULL DEFAULT 'pending', -- 'pending', 'processed', 'error'
+    doc_type          TEXT,                          -- e.g. 'bill', 'prescription', 'handwritten_note', 'general'
+    extracted_json    JSONB,                         -- structured output from Gemini AI
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

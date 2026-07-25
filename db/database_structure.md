@@ -81,6 +81,8 @@ Stores metadata and disk storage paths for documents photographed via browser ca
 | `mime_type` | `TEXT` | `NOT NULL` | MIME content type (e.g., `image/jpeg`, `image/png`, `application/pdf`) |
 | `source` | `TEXT` | `NOT NULL`, `DEFAULT 'camera'` | Capture source: `'camera'` or `'file_input'` |
 | `status` | `TEXT` | `NOT NULL`, `DEFAULT 'pending'` | Processing status: `'pending'`, `'processed'`, `'error'` |
+| `doc_type` | `TEXT` | `NULLABLE` | Categorized document type (`'bill'`, `'prescription'`, `'handwritten_note'`, `'receipt'`, `'general'`) |
+| `extracted_json` | `JSONB` | `NULLABLE` | Extracted structured JSON data returned from Google Gemini API |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Upload timestamp |
 
 #### Indexes & Constraints
@@ -90,10 +92,3 @@ Stores metadata and disk storage paths for documents photographed via browser ca
 - `idx_user_uploads_uuid`: B-tree index on `uuid`
 - `user_uploads_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
----
-
-## Future Schema Extensions (Planned)
-
-When AI extraction is enabled, the `user_uploads` table will be extended with:
-- `doc_type` (`TEXT`): Categorized document type (`'bill'`, `'prescription'`, `'handwritten_note'`, etc.)
-- `extracted_json` (`JSONB`): Extracted structured JSON data returned from Google Gemini API.
