@@ -171,7 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch('/api/chat.php', {
+      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const response = await fetch(chatApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,6 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
           message: text
         })
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Chat API HTTP Error:', response.status, errorText);
+        throw new Error(`Server error (${response.status})`);
+      }
 
       const data = await response.json();
       hideTyping();
