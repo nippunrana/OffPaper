@@ -45,6 +45,7 @@ Implemented in `src/ai/document_upload/DocumentPipeline.php` + `DocumentSchemas.
 - **Modes:** normal chat or `plan_assist` (activated automatically for `plan`-type docs, or via `data-chat-mode="plan_assist"`). Plan assist uses a different system prompt focused on strengthening, questioning, and prioritising the plan.
 - Frontend: `views/chat_modal.php` + `public/assets/js/doc-chat.js` + `public/assets/css/chat.css`. The chat API endpoint URL is overridable via `window.OFFPAPER_CHAT_URL` (defaults to `api/chat.php`). The finalise endpoint is overridable via `window.OFFPAPER_CHAT_FINALISE_URL` (defaults to `api/chat_finalise_plan.php`).
 - **Note:** `chat.php` persists conversation history for **all document types** in `user_uploads_knowledgebase`. History is loaded on modal open and sent as context on subsequent messages. A `mode=clear_history` POST wipes history to support the "New Chat" button in the frontend.
+- **Auto-recap on close:** `public/api/chat_finalize.php` (note: US spelling, distinct from `chat_finalise_plan.php` below) is fired fire-and-forget by `doc-chat.js` when the modal is closed in `plan_assist` mode and at least one new message was sent that session. It summarizes the chat history into a plain-text 2–4 sentence recap via Gemini and upserts it into `user_uploads_knowledgebase.summary` — a lightweight background recap, separate from the explicit "Finalise the Plan" snapshot flow.
 
 ## Plan Finalisation ("Finalise the Plan" feature)
 Activated only in `plan_assist` mode (plan-type documents). Allows the user to synthesise the entire chat into a clean, versioned plan snapshot.
@@ -84,6 +85,7 @@ Activated only in `plan_assist` mode (plan-type documents). Allows the user to s
 - [`public/upload.php`](public/upload.php) — capture/upload endpoint, triggers the AI pipeline.
 - [`public/dashboard.php`](public/dashboard.php) — main UI: stats, category filter tabs, document grid/cards, detail modal.
 - [`public/api/chat.php`](public/api/chat.php) — document Q&A + history persistence; GET also returns `plan_snapshots`.
+- [`public/api/chat_finalize.php`](public/api/chat_finalize.php) — fire-and-forget recap summary on modal close (plan_assist only); writes to `user_uploads_knowledgebase.summary`.
 - [`public/api/chat_finalise_plan.php`](public/api/chat_finalise_plan.php) — plan synthesis endpoint; stores versioned snapshots in `extracted_json`, clears chat.
 - [`public/api/add_to_calendar.php`](public/api/add_to_calendar.php), [`public/api/delete_document.php`](public/api/delete_document.php) — document-scoped JSON API endpoints.
 - [`views/chat_modal.php`](views/chat_modal.php) — split-panel chat modal HTML (left chat pane + right plan panel).
