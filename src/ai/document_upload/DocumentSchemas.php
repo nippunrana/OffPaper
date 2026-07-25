@@ -31,7 +31,7 @@ class DocumentSchemas
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
             'systemInstruction' => "You are an expert document classification engine for OffPaper. Analyze the provided image of a paper document, receipt, or handwritten note, identify all applicable categories it belongs to, and generate a concise summary. Read ONLY what is visible in the image.\n\n" . $dateContext,
-            'prompt' => 'Analyze this document image. Determine which of the target categories apply: prescription, labreport, plan, bills, deadline. A single document MAY belong to multiple categories simultaneously. Write a summary of the document in EXACTLY 10 to 20 words. If a date or appointment schedule is mentioned (e.g., "today at 4pm", "after 5 days"), resolve it to an explicit calendar date based on the document date or current system date.',
+            'prompt' => 'Analyze this document image. Determine which of the target categories apply: prescription, labreport, plan, bills, deadline. A single document MAY belong to multiple categories simultaneously. IMPORTANT: 1. If this document is a prescription, medical note, or handwritten doctor sheet AND mentions any follow-up visit, appointment date, refill deadline, or future timeframe (whether in handwriting or print, e.g. "follow up after 2 weeks", "visit in 10 days", "refill by August 15", "appointment on..."), you MUST include the "deadline" category in addition to "prescription". 2. If this document is a bill, invoice, or receipt AND mentions any payment due date or due phrase (e.g. "payment due by Aug 30", "due in 15 days", "pay within 30 days"), you MUST include the "deadline" category in addition to "bills". Write a summary of the document in EXACTLY 10 to 20 words. If a date or appointment schedule is mentioned, resolve it to an explicit calendar date based on the document date or current system date.',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
@@ -65,7 +65,7 @@ class DocumentSchemas
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
             'systemInstruction' => "You are a high-precision invoice and receipt parser for OffPaper. Extract vendor details, line items, prices, tax, total amounts, and payment due dates from the document image. Read ONLY visible text. Do NOT estimate or compute missing prices.\n\n" . $dateContext,
-            'prompt' => 'Extract all bill/invoice details: vendor name, bill date, invoice number, currency, itemized line items (description, quantity, unit price, total price), subtotal, tax, grand total, and payment due date (resolve any relative due phrase into an absolute YYYY-MM-DD date based on bill date or current system date).',
+            'prompt' => 'Extract all bill/invoice details: vendor name, bill date, invoice number, currency, itemized line items (description, quantity, unit price, total price), subtotal, tax, grand total, and payment due date (resolve any relative due phrase like "due in 15 days", "pay within 30 days" into an absolute YYYY-MM-DD date based on bill date or current system date).',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
@@ -104,17 +104,17 @@ class DocumentSchemas
     {
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => "You are a time-sensitive task and deadline extractor for OffPaper. Extract key date commitments, due dates, submission deadlines, and appointment schedules from the document image.\n\n" . $dateContext,
-            'prompt' => 'Extract all deadline details from this document: title/event, due date (resolve any relative phrase like "today", "tomorrow", "after 5 days at 4pm" into an absolute YYYY-MM-DD date based on document writing date or current system date), due time, priority, issuer or organization, and action required.',
+            'systemInstruction' => "You are a time-sensitive task, bill payment due date, doctor appointment, and deadline extractor for OffPaper. Extract key date commitments, payment due dates, submission deadlines, doctor follow-up appointments, handwritten prescription visit dates, and appointment schedules from the document image.\n\n" . $dateContext,
+            'prompt' => 'Extract all deadline, appointment, and bill payment details from this document (including bill/invoice payment due dates, vendor deadlines, doctor follow-up dates, handwritten appointment notes on prescriptions, or submission deadlines): title/event (e.g., "Vendor Payment Due", "Doctor Follow-up", "Prescription Refill", or deadline title), due date (resolve any relative phrase like "due in 15 days", "follow up in 2 weeks", "visit after 10 days", "today", "tomorrow" into an absolute YYYY-MM-DD date based on document/bill/prescription writing date or current system date), due time, priority, issuer or organization (e.g., vendor name, prescribing doctor, clinic name, or issuing organization), and action required (e.g., "Pay bill invoice", "Follow up appointment with doctor", "Submit payment").',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
-                    'title' => ['type' => 'string', 'nullable' => true],
-                    'due_date' => ['type' => 'string', 'description' => 'Absolute YYYY-MM-DD format. Resolve relative terms (e.g. "today", "after 5 days") based on document writing date if present, or current system date if not.', 'nullable' => true],
+                    'title' => ['type' => 'string', 'description' => 'Title of deadline, bill payment, task, doctor appointment, or prescription follow-up', 'nullable' => true],
+                    'due_date' => ['type' => 'string', 'description' => 'Absolute YYYY-MM-DD format. Resolve relative terms (e.g. "due in 15 days", "follow up in 2 weeks", "after 5 days") based on document writing date if present, or current system date if not.', 'nullable' => true],
                     'due_time' => ['type' => 'string', 'description' => 'HH:MM 24-hr or 12-hr format (e.g. 16:00 or 4:00 PM)', 'nullable' => true],
                     'priority' => ['type' => 'string', 'enum' => ['high', 'medium', 'low']],
-                    'issuer_or_organization' => ['type' => 'string', 'nullable' => true],
-                    'action_required' => ['type' => 'string', 'nullable' => true],
+                    'issuer_or_organization' => ['type' => 'string', 'description' => 'Issuer, doctor name, clinic, or organization', 'nullable' => true],
+                    'action_required' => ['type' => 'string', 'description' => 'Specific action or appointment instructions', 'nullable' => true],
                     'extraction_confidence' => ['type' => 'number']
                 ],
                 'required' => ['priority']
@@ -130,7 +130,7 @@ class DocumentSchemas
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
             'systemInstruction' => "You are a specialized medical prescription digitizer for OffPaper. Extract doctor details, patient info, and prescribed medications accurately from the document image. Ground all extractions strictly in the source text.\n\n" . $dateContext,
-            'prompt' => 'Extract patient details, prescribing doctor name, clinic/hospital name, prescription date (prescription/visit date in YYYY-MM-DD format), and all prescribed medications (name, dosage, frequency, duration, special instructions). If follow-up visits or durations mention relative dates (e.g., "visit after 10 days"), calculate absolute dates from the prescription/visit date.',
+            'prompt' => 'Extract patient details, prescribing doctor name, clinic/hospital name, prescription date (prescription/visit date in YYYY-MM-DD format), and all prescribed medications (name, dosage, frequency, duration, special instructions). If handwritten or typed notes mention follow-up visits, doctor appointments, or durations (e.g., "visit after 10 days", "follow up in 2 weeks"), calculate absolute dates from the prescription/visit date.',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [

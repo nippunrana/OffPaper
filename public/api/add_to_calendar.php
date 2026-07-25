@@ -57,6 +57,10 @@ if (is_array($extracted)) {
         $d = $extracted['deadline'];
     } elseif (!empty($extracted['data']['deadline']) && is_array($extracted['data']['deadline'])) {
         $d = $extracted['data']['deadline'];
+    } elseif (!empty($extracted['bills']) && is_array($extracted['bills']) && !empty($extracted['bills']['payment_due_date'])) {
+        $d = $extracted['bills'];
+        $d['due_date'] = $extracted['bills']['payment_due_date'];
+        $d['title'] = ($extracted['bills']['vendor_name'] ?? 'Bill') . ' Payment Due';
     } elseif (!empty($extracted['due_date']) || !empty($extracted['payment_due_date'])) {
         $d = $extracted['data'] ?? $extracted;
     }
