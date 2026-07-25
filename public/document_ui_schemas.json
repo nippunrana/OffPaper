@@ -1,0 +1,178 @@
+{
+  "$comment": "OffPaper Multi-Category Document Schemas & Mock Payload Reference for Frontend UI",
+  "classifier_schema": {
+    "summary": "Concise summary of the document strictly between 10 and 20 words long.",
+    "categories": ["bills", "deadline"],
+    "confidence": 0.95
+  },
+  "categories": {
+    "bills": {
+      "description": "Itemized bill/invoice extraction format",
+      "example": {
+        "vendor_name": "City Electric & Power Co.",
+        "bill_date": "2026-07-15",
+        "invoice_number": "INV-98241",
+        "currency": "USD",
+        "items": [
+          {
+            "description": "Electricity Usage (350 kWh)",
+            "quantity": 350,
+            "unit_price": 0.15,
+            "total_price": 52.50
+          },
+          {
+            "description": "Service & Fixed Delivery Charge",
+            "quantity": 1,
+ unit_price": 12.00,
+            "total_price": 12.00
+          }
+        ],
+        "subtotal": 64.50,
+        "tax": 5.16,
+        "grand_total": 69.66,
+        "payment_due_date": "2026-08-05",
+        "extraction_confidence": 0.96
+      }
+    },
+    "deadline": {
+      "description": "Time-sensitive deadline or appointment notice",
+      "example": {
+        "title": "Electricity Bill Payment Due",
+        "due_date": "2026-08-05",
+        "due_time": "17:00",
+        "priority": "high",
+        "issuer_or_organization": "City Electric & Power Co.",
+        "action_required": "Pay balance of $69.66 before due date to avoid service disruption.",
+        "extraction_confidence": 0.94
+      }
+    },
+    "prescription": {
+      "description": "Medical prescription and pharmacy record",
+      "example": {
+        "doctor_name": "Dr. Sarah Jenkins",
+        "clinic_hospital": "St. Jude Medical Center",
+        "prescription_date": "2026-07-20",
+        "patient_name": "Alex Carter",
+        "medications": [
+          {
+            "name": "Amoxicillin",
+            "dosage": "500mg",
+            "frequency": "Three times daily (every 8 hours)",
+            "duration": "7 days",
+            "special_instructions": "Take with meals and complete full course."
+          },
+          {
+            "name": "Ibuprofen",
+            "dosage": "400mg",
+            "frequency": "As needed for pain",
+            "duration": "5 days",
+            "special_instructions": "Do not exceed 3 tablets in 24 hours."
+          }
+        ],
+        "extraction_confidence": 0.95
+      }
+    },
+    "labreport": {
+      "description": "Diagnostic laboratory test panel report",
+      "example": {
+        "lab_name": "Apex Diagnostic Pathology Lab",
+        "report_date": "2026-07-22",
+        "patient_name": "Alex Carter",
+        "test_results": [
+          {
+            "test_name": "Hemoglobin",
+            "observed_value": "14.1",
+            "unit": "g/dL",
+            "reference_range": "13.5 - 17.5",
+            "status_flag": "normal"
+          },
+          {
+            "test_name": "Fasting Blood Glucose",
+            "observed_value": "112",
+            "unit": "mg/dL",
+            "reference_range": "70 - 99",
+            "status_flag": "high"
+          },
+          {
+            "test_name": "Total Cholesterol",
+            "observed_value": "185",
+            "unit": "mg/dL",
+            "reference_range": "< 200",
+            "status_flag": "normal"
+          }
+        ],
+        "extraction_confidence": 0.93
+      }
+    },
+    "plan": {
+      "description": "Handwritten or typed step-by-step action plan",
+      "example": {
+        "plan_title": "Kids Treehouse Construction Plan",
+        "date": "2026-07-24",
+        "action_items": [
+          {
+            "step_number": 1,
+            "task": "Measure oak tree base and purchase treated 4x4 timber beams",
+            "assigned_to": "Dad",
+            "status": "completed"
+          },
+          {
+            "step_number": 2,
+            "task": "Construct platform support frame with heavy duty bolts",
+            "assigned_to": "Dad & Uncle Mike",
+            "status": "pending"
+          },
+          {
+            "step_number": 3,
+            "task": "Install wooden ladder and safety railing around perimeter",
+            "assigned_to": "Dad",
+            "status": "pending"
+          }
+        ],
+        "notes": "Ensure safety harness is worn during roof assembly.",
+        "extraction_confidence": 0.91
+      }
+    }
+  },
+  "full_pipeline_response_example": {
+    "success": true,
+    "summary": "Monthly electricity utility bill with an itemized total of $69.66 due on August 5th 2026.",
+    "categories": ["bills", "deadline"],
+    "extracted_data": {
+      "bills": {
+        "vendor_name": "City Electric & Power Co.",
+        "bill_date": "2026-07-15",
+        "invoice_number": "INV-98241",
+        "currency": "USD",
+        "items": [
+          {
+            "description": "Electricity Usage (350 kWh)",
+            "quantity": 350,
+            "unit_price": 0.15,
+            "total_price": 52.50
+          },
+          {
+            "description": "Service & Fixed Delivery Charge",
+            "quantity": 1,
+            "unit_price": 12.00,
+            "total_price": 12.00
+          }
+        ],
+        "subtotal": 64.50,
+        "tax": 5.16,
+        "grand_total": 69.66,
+        "payment_due_date": "2026-08-05",
+        "extraction_confidence": 0.96
+      },
+      "deadline": {
+        "title": "Electricity Bill Payment Due",
+        "due_date": "2026-08-05",
+        "due_time": "17:00",
+        "priority": "high",
+        "issuer_or_organization": "City Electric & Power Co.",
+        "action_required": "Pay balance of $69.66 before due date to avoid service disruption.",
+        "extraction_confidence": 0.94
+      }
+    }
+  }
+}

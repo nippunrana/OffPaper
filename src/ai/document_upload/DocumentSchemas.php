@@ -1,109 +1,139 @@
 <?php
 /**
- * OffPaper — Document Schemas & Prompts Repository
+ * OffPaper — Multi-Category Document Schemas & System Prompts
  * 
  * Provides declarative prompts and strict JSON schemas for Gemini model responses
- * specific to document image/PDF upload processing.
+ * supporting multi-category document processing (prescription, labreport, plan, bills, deadline).
  */
 
 class DocumentSchemas
 {
     /**
-     * Stage 1: Document Classifier Prompt & Schema
+     * Stage 1: Multi-Category Classifier Prompt & Schema
      */
     public static function getClassifierConfig(): array
     {
         return [
-            'systemInstruction' => 'You are an expert document classification AI. Analyze the image or document and determine its exact type.',
-            'prompt' => 'Analyze this document. Classify its primary document type into one of the following categories: bill, prescription, handwritten_note, receipt, or general. Provide a high-confidence classification and a concise 1-sentence summary.',
+            'systemInstruction' => 'You are an expert document classification engine for OffPaper. Analyze the provided image of a paper document, receipt, or handwritten note, identify all applicable categories it belongs to, and generate a concise summary. Read ONLY what is visible in the image.',
+            'prompt' => 'Analyze this document image. Determine which of the target categories apply: prescription, labreport, plan, bills, deadline. A single document MAY belong to multiple categories simultaneously. Write a summary of the document in EXACTLY 10 to 20 words.',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
-                    'doc_type' => [
+                    'summary' => [
                         'type' => 'string',
-                        'enum' => ['bill', 'prescription', 'handwritten_note', 'receipt', 'general']
+                        'description' => 'Concise summary of the document strictly between 10 and 20 words long.'
+                    ],
+                    'categories' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'string',
+                            'enum' => ['prescription', 'labreport', 'plan', 'bills', 'deadline']
+                        ],
+                        'description' => 'List of detected document categories.'
                     ],
                     'confidence' => [
                         'type' => 'number',
-                        'description' => 'Confidence score from 0.0 to 1.0'
-                    ],
-                    'summary' => [
-                        'type' => 'string',
-                        'description' => '1-sentence summary of the document'
+                        'description' => 'Classification confidence score from 0.0 to 1.0'
                     ]
                 ],
-                'required' => ['doc_type', 'confidence', 'summary']
+                'required' => ['summary', 'categories', 'confidence']
             ]
         ];
     }
 
     /**
-     * Stage 2: Specialized Bill & Invoice Extraction Schema
+     * Stage 2: Bills Extractor Schema (`bills`)
      */
-    public static function getBillConfig(): array
+    public static function getBillsConfig(): array
     {
         return [
-            'systemInstruction' => 'You are a financial document processing AI. Extract structured bill and invoice data with precision.',
-            'prompt' => 'Extract all bill details from this document: vendor name, invoice/account number, dates, total due amount, line items, and payment instructions.',
+            'systemInstruction' => 'You are a high-precision invoice and receipt parser for OffPaper. Extract vendor details, line items, prices, tax, total amounts, and payment due dates from the document image. Read ONLY visible text. Do NOT estimate or compute missing prices.',
+            'prompt' => 'Extract all bill/invoice details: vendor name, bill date, invoice number, currency, itemized line items (description, quantity, unit price, total price), subtotal, tax, grand total, and payment due date.',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
-                    'vendor_name' => ['type' => 'string'],
-                    'invoice_number' => ['type' => 'string'],
-                    'account_number' => ['type' => 'string'],
-                    'issue_date' => ['type' => 'string', 'description' => 'ISO date format YYYY-MM-DD if available'],
-                    'due_date' => ['type' => 'string', 'description' => 'ISO date format YYYY-MM-DD if available'],
-                    'total_amount' => ['type' => 'number'],
-                    'currency' => ['type' => 'string'],
-                    'line_items' => [
+                    'vendor_name' => ['type' => 'string', 'nullable' => true],
+                    'bill_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format if available', 'nullable' => true],
+                    'invoice_number' => ['type' => 'string', 'nullable' => true],
+                    'currency' => ['type' => 'string', 'description' => 'Currency code or symbol e.g. USD, EUR, INR, $', 'nullable' => true],
+                    'items' => [
                         'type' => 'array',
                         'items' => [
                             'type' => 'object',
                             'properties' => [
                                 'description' => ['type' => 'string'],
-                                'quantity' => ['type' => 'number'],
-                                'amount' => ['type' => 'number']
+                                'quantity' => ['type' => 'number', 'nullable' => true],
+                                'unit_price' => ['type' => 'number', 'nullable' => true],
+                                'total_price' => ['type' => 'number', 'nullable' => true]
                             ],
-                            'required' => ['description', 'amount']
+                            'required' => ['description']
                         ]
                     ],
-                    'notes' => ['type' => 'string']
+                    'subtotal' => ['type' => 'number', 'nullable' => true],
+                    'tax' => ['type' => 'number', 'nullable' => true],
+                    'grand_total' => ['type' => 'number', 'nullable' => true],
+                    'payment_due_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format if available', 'nullable' => true],
+                    'extraction_confidence' => ['type' => 'number']
                 ],
-                'required' => ['vendor_name', 'total_amount', 'due_date']
+                'required' => ['items']
             ]
         ];
     }
 
     /**
-     * Stage 2: Specialized Prescription & Medical Record Schema
+     * Stage 2: Deadline Extractor Schema (`deadline`)
+     */
+    public static function getDeadlineConfig(): array
+    {
+        return [
+            'systemInstruction' => 'You are a time-sensitive task and deadline extractor for OffPaper. Extract key date commitments, due dates, submission deadlines, and appointment schedules from the document image.',
+            'prompt' => 'Extract all deadline details from this document: title/event, due date, due time, priority, issuer or organization, and action required.',
+            'responseSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'title' => ['type' => 'string', 'nullable' => true],
+                    'due_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format', 'nullable' => true],
+                    'due_time' => ['type' => 'string', 'description' => 'HH:MM 24-hr or 12-hr format', 'nullable' => true],
+                    'priority' => ['type' => 'string', 'enum' => ['high', 'medium', 'low']],
+                    'issuer_or_organization' => ['type' => 'string', 'nullable' => true],
+                    'action_required' => ['type' => 'string', 'nullable' => true],
+                    'extraction_confidence' => ['type' => 'number']
+                ],
+                'required' => ['priority']
+            ]
+        ];
+    }
+
+    /**
+     * Stage 2: Prescription Extractor Schema (`prescription`)
      */
     public static function getPrescriptionConfig(): array
     {
         return [
-            'systemInstruction' => 'You are a medical record processing AI. Extract clinical prescription and health record data with extreme accuracy.',
-            'prompt' => 'Extract patient details, doctor information, clinic name, date, diagnosis, and prescribed medications from this medical document.',
+            'systemInstruction' => 'You are a specialized medical prescription digitizer for OffPaper. Extract doctor details, patient info, and prescribed medications accurately from the document image. Ground all extractions strictly in the source text.',
+            'prompt' => 'Extract patient details, prescribing doctor name, clinic/hospital name, prescription date, and all prescribed medications (name, dosage, frequency, duration, special instructions).',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
-                    'patient_name' => ['type' => 'string'],
-                    'doctor_name' => ['type' => 'string'],
-                    'clinic_or_hospital' => ['type' => 'string'],
-                    'prescription_date' => ['type' => 'string', 'description' => 'ISO date format YYYY-MM-DD if available'],
-                    'diagnosis_notes' => ['type' => 'string'],
+                    'doctor_name' => ['type' => 'string', 'nullable' => true],
+                    'clinic_hospital' => ['type' => 'string', 'nullable' => true],
+                    'prescription_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format', 'nullable' => true],
+                    'patient_name' => ['type' => 'string', 'nullable' => true],
                     'medications' => [
                         'type' => 'array',
                         'items' => [
                             'type' => 'object',
                             'properties' => [
                                 'name' => ['type' => 'string'],
-                                'dosage' => ['type' => 'string'],
-                                'frequency' => ['type' => 'string'],
-                                'duration' => ['type' => 'string'],
-                                'instructions' => ['type' => 'string']
+                                'dosage' => ['type' => 'string', 'nullable' => true],
+                                'frequency' => ['type' => 'string', 'nullable' => true],
+                                'duration' => ['type' => 'string', 'nullable' => true],
+                                'special_instructions' => ['type' => 'string', 'nullable' => true]
                             ],
-                            'required' => ['name', 'dosage']
+                            'required' => ['name']
                         ]
-                    ]
+                    ],
+                    'extraction_confidence' => ['type' => 'number']
                 ],
                 'required' => ['medications']
             ]
@@ -111,124 +141,94 @@ class DocumentSchemas
     }
 
     /**
-     * Stage 2: Specialized Handwritten Note Schema
+     * Stage 2: Lab Report Extractor Schema (`labreport`)
      */
-    public static function getHandwrittenNoteConfig(): array
+    public static function getLabReportConfig(): array
     {
         return [
-            'systemInstruction' => 'You are an advanced handwriting OCR and note parsing AI. Accurately transcribe handwritten paper notes.',
-            'prompt' => 'Transcribe the handwritten note. Extract full verbatim text, summary, key deadlines or action items, and mentioned dates.',
+            'systemInstruction' => 'You are a diagnostic lab report extraction engine for OffPaper. Extract test panel results, numerical values, units, reference ranges, and status flags from the document image. Do NOT calculate or modify values — record only what is visible.',
+            'prompt' => 'Extract diagnostic lab report details: lab name, report date, patient name, and all test results (test name, observed value, unit, reference range, status flag).',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
-                    'title' => ['type' => 'string'],
-                    'transcription' => ['type' => 'string'],
-                    'summary' => ['type' => 'string'],
+                    'lab_name' => ['type' => 'string', 'nullable' => true],
+                    'report_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format', 'nullable' => true],
+                    'patient_name' => ['type' => 'string', 'nullable' => true],
+                    'test_results' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'test_name' => ['type' => 'string'],
+                                'observed_value' => ['type' => 'string', 'nullable' => true],
+                                'unit' => ['type' => 'string', 'nullable' => true],
+                                'reference_range' => ['type' => 'string', 'nullable' => true],
+                                'status_flag' => ['type' => 'string', 'nullable' => true, 'description' => 'normal, high, low, critical, or null']
+                            ],
+                            'required' => ['test_name']
+                        ]
+                    ],
+                    'extraction_confidence' => ['type' => 'number']
+                ],
+                'required' => ['test_results']
+            ]
+        ];
+    }
+
+    /**
+     * Stage 2: Action Plan Extractor Schema (`plan`)
+     */
+    public static function getPlanConfig(): array
+    {
+        return [
+            'systemInstruction' => 'You are an actionable plan and task list parser for OffPaper. Extract goals, step-by-step action items, assignees, and notes from handwritten or typed document notes.',
+            'prompt' => 'Extract action plan details: plan title, note date, sequential action items (step number, task description, assigned to, status), and extra notes.',
+            'responseSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'plan_title' => ['type' => 'string', 'nullable' => true],
+                    'date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format', 'nullable' => true],
                     'action_items' => [
                         'type' => 'array',
                         'items' => [
                             'type' => 'object',
                             'properties' => [
+                                'step_number' => ['type' => 'number'],
                                 'task' => ['type' => 'string'],
-                                'deadline' => ['type' => 'string'],
-                                'assigned_to' => ['type' => 'string']
+                                'assigned_to' => ['type' => 'string', 'nullable' => true],
+                                'status' => ['type' => 'string', 'nullable' => true, 'description' => 'pending or completed']
                             ],
-                            'required' => ['task']
+                            'required' => ['step_number', 'task']
                         ]
                     ],
-                    'dates_mentioned' => [
-                        'type' => 'array',
-                        'items' => ['type' => 'string']
-                    ]
+                    'notes' => ['type' => 'string', 'nullable' => true],
+                    'extraction_confidence' => ['type' => 'number']
                 ],
-                'required' => ['transcription', 'summary']
+                'required' => ['action_items']
             ]
         ];
     }
 
     /**
-     * Stage 2: Specialized Receipt Schema
+     * Get extraction configuration for a specified category string
      */
-    public static function getReceiptConfig(): array
+    public static function getConfigForCategory(string $category): array
     {
-        return [
-            'systemInstruction' => 'You are a receipt processing AI. Extract structured transaction details from receipts.',
-            'prompt' => 'Extract store/merchant name, transaction date, total paid, tax amount, payment method, and line items from this receipt.',
-            'responseSchema' => [
-                'type' => 'object',
-                'properties' => [
-                    'merchant_name' => ['type' => 'string'],
-                    'transaction_date' => ['type' => 'string'],
-                    'total_paid' => ['type' => 'number'],
-                    'tax_amount' => ['type' => 'number'],
-                    'payment_method' => ['type' => 'string'],
-                    'items' => [
-                        'type' => 'array',
-                        'items' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'name' => ['type' => 'string'],
-                                'price' => ['type' => 'number'],
-                                'qty' => ['type' => 'number']
-                            ],
-                            'required' => ['name', 'price']
-                        ]
-                    ]
-                ],
-                'required' => ['merchant_name', 'total_paid']
-            ]
-        ];
+        return match ($category) {
+            'bills', 'bill', 'receipt' => self::getBillsConfig(),
+            'deadline' => self::getDeadlineConfig(),
+            'prescription' => self::getPrescriptionConfig(),
+            'labreport', 'lab_report' => self::getLabReportConfig(),
+            'plan', 'handwritten_note' => self::getPlanConfig(),
+            default => self::getPlanConfig(),
+        };
     }
 
     /**
-     * Stage 2: General Fallback Document Schema
-     */
-    public static function getGeneralConfig(): array
-    {
-        return [
-            'systemInstruction' => 'You are a general document extraction AI. Extract structured summary and data points.',
-            'prompt' => 'Extract key structured information from this document: title, summary, key points, dates, and amounts.',
-            'responseSchema' => [
-                'type' => 'object',
-                'properties' => [
-                    'title' => ['type' => 'string'],
-                    'summary' => ['type' => 'string'],
-                    'key_points' => [
-                        'type' => 'array',
-                        'items' => ['type' => 'string']
-                    ],
-                    'key_dates' => [
-                        'type' => 'array',
-                        'items' => ['type' => 'string']
-                    ],
-                    'key_amounts' => [
-                        'type' => 'array',
-                        'items' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'label' => ['type' => 'string'],
-                                'amount' => ['type' => 'number']
-                            ]
-                        ]
-                    ],
-                    'extracted_text' => ['type' => 'string']
-                ],
-                'required' => ['title', 'summary']
-            ]
-        ];
-    }
-
-    /**
-     * Get extraction configuration for a specified document type
+     * Backward compatibility alias for getConfigForCategory
      */
     public static function getConfigForDocType(string $docType): array
     {
-        return match ($docType) {
-            'bill' => self::getBillConfig(),
-            'prescription' => self::getPrescriptionConfig(),
-            'handwritten_note' => self::getHandwrittenNoteConfig(),
-            'receipt' => self::getReceiptConfig(),
-            default => self::getGeneralConfig(),
-        };
+        return self::getConfigForCategory($docType);
     }
 }
