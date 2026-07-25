@@ -364,11 +364,25 @@ require VIEWS . '/header.php';
                 <?php endif; ?>
 
                 <?php if (isset($ext['deadline'])): ?>
-                  <?php $d = $ext['deadline']; ?>
+                  <?php
+                    $d = $ext['deadline'];
+                    $dueDateStr = !empty($d['due_date']) ? trim($d['due_date']) : '';
+                    $dueTimeStr = !empty($d['due_time']) ? trim($d['due_time']) : '';
+                    $isPast = false;
+                    if (!empty($dueDateStr)) {
+                        $dueTs = strtotime($dueDateStr . ($dueTimeStr ? ' ' . $dueTimeStr : ' 23:59:59'));
+                        if ($dueTs !== false && $dueTs < time()) {
+                            $isPast = true;
+                        }
+                    }
+                  ?>
                   <?php if (!empty($d['due_date'])): ?>
                     <div class="doc-field">
                       <span class="doc-field__label">Due Date:</span>
-                      <strong class="doc-field__value doc-field__value--urgent"><?= e($d['due_date']) ?><?= !empty($d['due_time']) ? ' (' . e($d['due_time']) . ')' : '' ?></strong>
+                      <strong class="doc-field__value <?= $isPast ? '' : 'doc-field__value--urgent' ?>" style="<?= $isPast ? 'color:#dc2626;' : '' ?>">
+                        <?= e($d['due_date']) ?><?= !empty($d['due_time']) ? ' (' . e($d['due_time']) . ')' : '' ?>
+                        <?= $isPast ? ' <span style="font-size: 0.75rem; font-weight: normal; background: rgba(239,68,68,0.15); padding: 2px 6px; border-radius: 4px; color: #dc2626;">(Passed)</span>' : '' ?>
+                      </strong>
                     </div>
                   <?php endif; ?>
                 <?php endif; ?>
@@ -405,7 +419,23 @@ require VIEWS . '/header.php';
                   Chat with AI
                 </button>
                 <?php if (isset($ext['deadline'])): ?>
-                  <?php if (!empty($ext['deadline']['calendar_html_link'])): ?>
+                  <?php
+                    $d = $ext['deadline'];
+                    $dueDateStr = !empty($d['due_date']) ? trim($d['due_date']) : '';
+                    $dueTimeStr = !empty($d['due_time']) ? trim($d['due_time']) : '';
+                    $isPast = false;
+                    if (!empty($dueDateStr)) {
+                        $dueTs = strtotime($dueDateStr . ($dueTimeStr ? ' ' . $dueTimeStr : ' 23:59:59'));
+                        if ($dueTs !== false && $dueTs < time()) {
+                            $isPast = true;
+                        }
+                    }
+                  ?>
+                  <?php if ($isPast): ?>
+                    <span class="btn btn--sm" style="grid-column: 1 / -1; cursor: default; background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                      ⚠️ Due date already passed
+                    </span>
+                  <?php elseif (!empty($ext['deadline']['calendar_html_link'])): ?>
                     <a href="<?= e($ext['deadline']['calendar_html_link']) ?>" target="_blank" rel="noopener" class="btn btn--calendar btn--sm btn--calendar-synced" style="grid-column: 1 / -1;">
                       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
                       In Google Calendar

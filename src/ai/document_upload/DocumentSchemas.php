@@ -9,13 +9,29 @@
 class DocumentSchemas
 {
     /**
+     * Builds standardized date context and relative date calculation rules for system instructions.
+     */
+    public static function getSystemDateContext(?string $referenceDate = null): string
+    {
+        $refDate = $referenceDate ?? date('Y-m-d (l, F j, Y)');
+        return "CURRENT SYSTEM DATE & TIME CONTEXT:\n"
+            . "- Current System Date: {$refDate}\n"
+            . "- DATE CALCULATION & RESOLUTION RULES:\n"
+            . "  1. Document Written/Visit Date Priority: Check the image carefully for any explicit document date (e.g., Rx date on a prescription, invoice/bill date on a receipt, lab report date, note date).\n"
+            . "  2. IF a document writing/issue/visit date is visible on the image, use THAT written document date as the reference base date for all relative offset calculations (e.g. 'visit after 10 days' or 'follow up in 2 weeks' means document_date + 10 days / 14 days; 'due in 15 days' means bill_date + 15 days).\n"
+            . "  3. IF NO document date is visible on the image, use the Current System Date ({$refDate}) as the reference base date for relative terms (e.g. 'today at 4pm' -> current system date at 4pm; 'tomorrow' -> current system date + 1 day; 'after 5 days' -> current system date + 5 days; 'next Monday' -> next Monday date).\n"
+            . "  4. Absolute Output Format: All calculated date fields (due_date, bill_date, payment_due_date, prescription_date, report_date, date) MUST be resolved and returned strictly as absolute YYYY-MM-DD format strings. Never output relative words like 'today', 'tomorrow', or 'after 5 days' into final date fields.";
+    }
+
+    /**
      * Stage 1: Multi-Category Classifier Prompt & Schema
      */
-    public static function getClassifierConfig(): array
+    public static function getClassifierConfig(?string $referenceDate = null): array
     {
+        $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => 'You are an expert document classification engine for OffPaper. Analyze the provided image of a paper document, receipt, or handwritten note, identify all applicable categories it belongs to, and generate a concise summary. Read ONLY what is visible in the image.',
-            'prompt' => 'Analyze this document image. Determine which of the target categories apply: prescription, labreport, plan, bills, deadline. A single document MAY belong to multiple categories simultaneously. Write a summary of the document in EXACTLY 10 to 20 words.',
+            'systemInstruction' => "You are an expert document classification engine for OffPaper. Analyze the provided image of a paper document, receipt, or handwritten note, identify all applicable categories it belongs to, and generate a concise summary. Read ONLY what is visible in the image.\n\n" . $dateContext,
+            'prompt' => 'Analyze this document image. Determine which of the target categories apply: prescription, labreport, plan, bills, deadline. A single document MAY belong to multiple categories simultaneously. Write a summary of the document in EXACTLY 10 to 20 words. If a date or appointment schedule is mentioned (e.g., "today at 4pm", "after 5 days"), resolve it to an explicit calendar date based on the document date or current system date.',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
@@ -44,16 +60,17 @@ class DocumentSchemas
     /**
      * Stage 2: Bills Extractor Schema (`bills`)
      */
-    public static function getBillsConfig(): array
+    public static function getBillsConfig(?string $referenceDate = null): array
     {
+        $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => 'You are a high-precision invoice and receipt parser for OffPaper. Extract vendor details, line items, prices, tax, total amounts, and payment due dates from the document image. Read ONLY visible text. Do NOT estimate or compute missing prices.',
-            'prompt' => 'Extract all bill/invoice details: vendor name, bill date, invoice number, currency, itemized line items (description, quantity, unit price, total price), subtotal, tax, grand total, and payment due date.',
+            'systemInstruction' => "You are a high-precision invoice and receipt parser for OffPaper. Extract vendor details, line items, prices, tax, total amounts, and payment due dates from the document image. Read ONLY visible text. Do NOT estimate or compute missing prices.\n\n" . $dateContext,
+            'prompt' => 'Extract all bill/invoice details: vendor name, bill date, invoice number, currency, itemized line items (description, quantity, unit price, total price), subtotal, tax, grand total, and payment due date (resolve any relative due phrase into an absolute YYYY-MM-DD date based on bill date or current system date).',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
                     'vendor_name' => ['type' => 'string', 'nullable' => true],
-                    'bill_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format if available', 'nullable' => true],
+                    'bill_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format if available on document', 'nullable' => true],
                     'invoice_number' => ['type' => 'string', 'nullable' => true],
                     'currency' => ['type' => 'string', 'description' => 'Currency code or symbol e.g. USD, EUR, INR, $', 'nullable' => true],
                     'items' => [
@@ -72,7 +89,7 @@ class DocumentSchemas
                     'subtotal' => ['type' => 'number', 'nullable' => true],
                     'tax' => ['type' => 'number', 'nullable' => true],
                     'grand_total' => ['type' => 'number', 'nullable' => true],
-                    'payment_due_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format if available', 'nullable' => true],
+                    'payment_due_date' => ['type' => 'string', 'description' => 'Absolute YYYY-MM-DD format. Calculate relative terms (e.g. "due in 15 days") using bill date if present, or current system date if not.', 'nullable' => true],
                     'extraction_confidence' => ['type' => 'number']
                 ],
                 'required' => ['items']
@@ -83,17 +100,18 @@ class DocumentSchemas
     /**
      * Stage 2: Deadline Extractor Schema (`deadline`)
      */
-    public static function getDeadlineConfig(): array
+    public static function getDeadlineConfig(?string $referenceDate = null): array
     {
+        $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => 'You are a time-sensitive task and deadline extractor for OffPaper. Extract key date commitments, due dates, submission deadlines, and appointment schedules from the document image.',
-            'prompt' => 'Extract all deadline details from this document: title/event, due date, due time, priority, issuer or organization, and action required.',
+            'systemInstruction' => "You are a time-sensitive task and deadline extractor for OffPaper. Extract key date commitments, due dates, submission deadlines, and appointment schedules from the document image.\n\n" . $dateContext,
+            'prompt' => 'Extract all deadline details from this document: title/event, due date (resolve any relative phrase like "today", "tomorrow", "after 5 days at 4pm" into an absolute YYYY-MM-DD date based on document writing date or current system date), due time, priority, issuer or organization, and action required.',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
                     'title' => ['type' => 'string', 'nullable' => true],
-                    'due_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format', 'nullable' => true],
-                    'due_time' => ['type' => 'string', 'description' => 'HH:MM 24-hr or 12-hr format', 'nullable' => true],
+                    'due_date' => ['type' => 'string', 'description' => 'Absolute YYYY-MM-DD format. Resolve relative terms (e.g. "today", "after 5 days") based on document writing date if present, or current system date if not.', 'nullable' => true],
+                    'due_time' => ['type' => 'string', 'description' => 'HH:MM 24-hr or 12-hr format (e.g. 16:00 or 4:00 PM)', 'nullable' => true],
                     'priority' => ['type' => 'string', 'enum' => ['high', 'medium', 'low']],
                     'issuer_or_organization' => ['type' => 'string', 'nullable' => true],
                     'action_required' => ['type' => 'string', 'nullable' => true],
@@ -107,17 +125,18 @@ class DocumentSchemas
     /**
      * Stage 2: Prescription Extractor Schema (`prescription`)
      */
-    public static function getPrescriptionConfig(): array
+    public static function getPrescriptionConfig(?string $referenceDate = null): array
     {
+        $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => 'You are a specialized medical prescription digitizer for OffPaper. Extract doctor details, patient info, and prescribed medications accurately from the document image. Ground all extractions strictly in the source text.',
-            'prompt' => 'Extract patient details, prescribing doctor name, clinic/hospital name, prescription date, and all prescribed medications (name, dosage, frequency, duration, special instructions).',
+            'systemInstruction' => "You are a specialized medical prescription digitizer for OffPaper. Extract doctor details, patient info, and prescribed medications accurately from the document image. Ground all extractions strictly in the source text.\n\n" . $dateContext,
+            'prompt' => 'Extract patient details, prescribing doctor name, clinic/hospital name, prescription date (prescription/visit date in YYYY-MM-DD format), and all prescribed medications (name, dosage, frequency, duration, special instructions). If follow-up visits or durations mention relative dates (e.g., "visit after 10 days"), calculate absolute dates from the prescription/visit date.',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
                     'doctor_name' => ['type' => 'string', 'nullable' => true],
                     'clinic_hospital' => ['type' => 'string', 'nullable' => true],
-                    'prescription_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format', 'nullable' => true],
+                    'prescription_date' => ['type' => 'string', 'description' => 'Absolute YYYY-MM-DD format of prescription/visit date', 'nullable' => true],
                     'patient_name' => ['type' => 'string', 'nullable' => true],
                     'medications' => [
                         'type' => 'array',
@@ -143,16 +162,17 @@ class DocumentSchemas
     /**
      * Stage 2: Lab Report Extractor Schema (`labreport`)
      */
-    public static function getLabReportConfig(): array
+    public static function getLabReportConfig(?string $referenceDate = null): array
     {
+        $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => 'You are a diagnostic lab report extraction engine for OffPaper. Extract test panel results, numerical values, units, reference ranges, and status flags from the document image. Do NOT calculate or modify values — record only what is visible.',
-            'prompt' => 'Extract diagnostic lab report details: lab name, report date, patient name, and all test results (test name, observed value, unit, reference range, status flag).',
+            'systemInstruction' => "You are a diagnostic lab report extraction engine for OffPaper. Extract test panel results, numerical values, units, reference ranges, and status flags from the document image. Do NOT calculate or modify values — record only what is visible.\n\n" . $dateContext,
+            'prompt' => 'Extract diagnostic lab report details: lab name, report date (YYYY-MM-DD format), patient name, and all test results (test name, observed value, unit, reference range, status flag).',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
                     'lab_name' => ['type' => 'string', 'nullable' => true],
-                    'report_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format', 'nullable' => true],
+                    'report_date' => ['type' => 'string', 'description' => 'Absolute YYYY-MM-DD format', 'nullable' => true],
                     'patient_name' => ['type' => 'string', 'nullable' => true],
                     'test_results' => [
                         'type' => 'array',
@@ -178,16 +198,17 @@ class DocumentSchemas
     /**
      * Stage 2: Action Plan Extractor Schema (`plan`)
      */
-    public static function getPlanConfig(): array
+    public static function getPlanConfig(?string $referenceDate = null): array
     {
+        $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => 'You are an actionable plan and task list parser for OffPaper. Extract goals, step-by-step action items, assignees, and notes from handwritten or typed document notes.',
-            'prompt' => 'Extract action plan details: plan title, note date, sequential action items (step number, task description, assigned to, status), and extra notes.',
+            'systemInstruction' => "You are an actionable plan and task list parser for OffPaper. Extract goals, step-by-step action items, assignees, and notes from handwritten or typed document notes.\n\n" . $dateContext,
+            'prompt' => 'Extract action plan details: plan title, note date (resolve relative phrases like "today", "after 5 days" into absolute YYYY-MM-DD date based on document writing date or current system date), sequential action items (step number, task description, assigned to, status), and extra notes.',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
                     'plan_title' => ['type' => 'string', 'nullable' => true],
-                    'date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format', 'nullable' => true],
+                    'date' => ['type' => 'string', 'description' => 'Absolute YYYY-MM-DD format. Calculate relative terms based on document date if present, or current system date if not.', 'nullable' => true],
                     'action_items' => [
                         'type' => 'array',
                         'items' => [
@@ -212,23 +233,23 @@ class DocumentSchemas
     /**
      * Get extraction configuration for a specified category string
      */
-    public static function getConfigForCategory(string $category): array
+    public static function getConfigForCategory(string $category, ?string $referenceDate = null): array
     {
         return match ($category) {
-            'bills', 'bill', 'receipt' => self::getBillsConfig(),
-            'deadline' => self::getDeadlineConfig(),
-            'prescription' => self::getPrescriptionConfig(),
-            'labreport', 'lab_report' => self::getLabReportConfig(),
-            'plan', 'handwritten_note' => self::getPlanConfig(),
-            default => self::getPlanConfig(),
+            'bills', 'bill', 'receipt' => self::getBillsConfig($referenceDate),
+            'deadline' => self::getDeadlineConfig($referenceDate),
+            'prescription' => self::getPrescriptionConfig($referenceDate),
+            'labreport', 'lab_report' => self::getLabReportConfig($referenceDate),
+            'plan', 'handwritten_note' => self::getPlanConfig($referenceDate),
+            default => self::getPlanConfig($referenceDate),
         };
     }
 
     /**
      * Backward compatibility alias for getConfigForCategory
      */
-    public static function getConfigForDocType(string $docType): array
+    public static function getConfigForDocType(string $docType, ?string $referenceDate = null): array
     {
-        return self::getConfigForCategory($docType);
+        return self::getConfigForCategory($docType, $referenceDate);
     }
 }

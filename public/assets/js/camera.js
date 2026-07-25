@@ -413,6 +413,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  function checkDeadlinePassed(dueDateStr, dueTimeStr) {
+    if (!dueDateStr) return false;
+    let dateTimeStr = String(dueDateStr).trim();
+    if (!dateTimeStr) return false;
+
+    if (dueTimeStr && String(dueTimeStr).trim()) {
+      dateTimeStr += ' ' + String(dueTimeStr).trim();
+    } else {
+      dateTimeStr += ' 23:59:59';
+    }
+
+    const dueTime = new Date(dateTimeStr).getTime();
+    if (isNaN(dueTime)) {
+      const parts = String(dueDateStr).trim().split('-');
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 23, 59, 59);
+        return d.getTime() < Date.now();
+      }
+      return false;
+    }
+    return dueTime < Date.now();
+  }
+
   function openDocumentDetail(doc) {
     if (!docDetailModal) return;
 
@@ -423,11 +446,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Calendar sync button in detail modal footer
     const hasDeadline = doc.extracted && doc.extracted.deadline;
-    const calendarLink = hasDeadline ? doc.extracted.deadline.calendar_html_link : null;
+    const deadlineData = hasDeadline ? doc.extracted.deadline : null;
+    const isDeadlinePast = deadlineData ? checkDeadlinePassed(deadlineData.due_date, deadlineData.due_time) : false;
+    const calendarLink = hasDeadline ? deadlineData.calendar_html_link : null;
+
+    let pastNotice = document.getElementById('detailPastDueNotice');
+    if (pastNotice) pastNotice.remove();
 
     if (detailAddToCalendarBtn && detailViewCalendarLink) {
       if (hasDeadline) {
-        if (calendarLink) {
+        if (isDeadlinePast) {
+          detailAddToCalendarBtn.style.display = 'none';
+          detailViewCalendarLink.style.display = 'none';
+
+          const noticeEl = document.createElement('span');
+          noticeEl.id = 'detailPastDueNotice';
+          noticeEl.className = 'btn btn--sm';
+          noticeEl.style.cssText = 'cursor: default; background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px;';
+          noticeEl.innerHTML = '⚠️ Due date already passed';
+          detailAddToCalendarBtn.parentNode.appendChild(noticeEl);
+        } else if (calendarLink) {
           detailAddToCalendarBtn.style.display = 'none';
           detailViewCalendarLink.style.display = 'inline-flex';
           detailViewCalendarLink.href = calendarLink;
@@ -578,15 +616,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Deadline renderer
             else if (catKey === 'deadline') {
+              const isPast = checkDeadlinePassed(secData.due_date, secData.due_time);
               bodyHtml += `
                 <div class="doc-field"><span class="doc-field__label">Event / Task:</span> <strong class="doc-field__value">${secData.title || 'N/A'}</strong></div>
-                <div class="doc-field"><span class="doc-field__label">Due Date:</span> <strong class="doc-field__value doc-field__value--urgent">${secData.due_date || 'N/A'} ${secData.due_time ? '(' + secData.due_time + ')' : ''}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Due Date:</span> <strong class="doc-field__value ${isPast ? '' : 'doc-field__value--urgent'}" style="${isPast ? 'color:#dc2626;' : ''}">${secData.due_date || 'N/A'} ${secData.due_time ? '(' + secData.due_time + ')' : ''} ${isPast ? '<span style="font-size:0.75rem;font-weight:normal;background:rgba(239,68,68,0.15);padding:2px 6px;border-radius:4px;color:#dc2626;">(Passed)</span>' : ''}</strong></div>
                 <div class="doc-field"><span class="doc-field__label">Priority:</span> <span class="detail-flag-badge detail-flag-badge--${secData.priority || 'medium'}">${(secData.priority || 'medium').toUpperCase()}</span></div>
                 <div class="doc-field"><span class="doc-field__label">Issuer:</span> <span class="doc-field__value">${secData.issuer_or_organization || 'N/A'}</span></div>
                 <div style="margin-top:var(--space-2);"><span class="doc-field__label">Action Required:</span> <p style="font-size:var(--text-xs);margin:0;">${escapeHtml(secData.action_required || 'N/A')}</p></div>
               `;
 
-              if (secData.calendar_html_link) {
+              if (isPast) {
+                bodyHtml += `
+                  <div style="margin-top:var(--space-3); background: rgba(239, 68, 68, 0.1); color: #dc2626; padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    ⚠️ Due date already passed
+                  </div>
+                `;
+              } else if (secData.calendar_html_link) {
                 bodyHtml += `
                   <div style="margin-top:var(--space-3);">
                     <a href="${escapeHtml(secData.calendar_html_link)}" target="_blank" rel="noopener" class="btn btn--calendar btn--sm btn--calendar-synced">

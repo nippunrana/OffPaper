@@ -40,6 +40,7 @@ class DocumentPipeline
         $classifierModel = $pipelineOptions['classifierModel'] ?? 'gemini-3.5-flash-lite';
         $extractorModel = $pipelineOptions['extractorModel'] ?? 'gemini-3.5-flash-lite';
         $forcedCategory = $pipelineOptions['forcedCategory'] ?? null;
+        $referenceDate = $pipelineOptions['referenceDate'] ?? date('Y-m-d (l, F j, Y)');
 
         $categories = [];
         $summary = '';
@@ -50,7 +51,7 @@ class DocumentPipeline
             $categories = is_array($forcedCategory) ? $forcedCategory : [$forcedCategory];
             $summary = 'User forced category extraction: ' . implode(', ', $categories);
         } else {
-            $classifierConfig = DocumentSchemas::getClassifierConfig();
+            $classifierConfig = DocumentSchemas::getClassifierConfig($referenceDate);
             
             $classifierResponse = $this->client->generateContent($classifierConfig['prompt'], [
                 'model' => $classifierModel,
@@ -78,7 +79,7 @@ class DocumentPipeline
         $extractedData = [];
 
         foreach ($categories as $category) {
-            $extractionConfig = DocumentSchemas::getConfigForCategory($category);
+            $extractionConfig = DocumentSchemas::getConfigForCategory($category, $referenceDate);
 
             $extractionResponse = $this->client->generateContent($extractionConfig['prompt'], [
                 'model' => $extractorModel,

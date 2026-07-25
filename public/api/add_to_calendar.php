@@ -86,6 +86,22 @@ if (empty($dueDate)) {
     exit;
 }
 
+// Check if due date has already passed
+$dueCheckTs = false;
+if (!empty($dueTime)) {
+    $dueCheckTs = strtotime($dueDate . ' ' . $dueTime);
+} else {
+    $dueCheckTs = strtotime($dueDate . ' 23:59:59');
+}
+
+if ($dueCheckTs !== false && $dueCheckTs < time()) {
+    echo json_encode([
+        'ok' => false,
+        'error' => 'The due date for this deadline has already passed. Cannot add to calendar.',
+    ]);
+    exit;
+}
+
 // Build event description
 $descParts = ["OffPaper Deadline Record"];
 if (!empty($issuer)) {
