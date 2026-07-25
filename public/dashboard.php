@@ -404,6 +404,19 @@ require VIEWS . '/header.php';
                   </svg>
                   Chat with AI
                 </button>
+                <?php if (isset($ext['deadline'])): ?>
+                  <?php if (!empty($ext['deadline']['calendar_html_link'])): ?>
+                    <a href="<?= e($ext['deadline']['calendar_html_link']) ?>" target="_blank" rel="noopener" class="btn btn--calendar btn--sm btn--calendar-synced" style="grid-column: 1 / -1;">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+                      In Google Calendar
+                    </a>
+                  <?php else: ?>
+                    <button type="button" class="btn btn--calendar btn--sm btn-add-calendar" data-doc-id="<?= (int)$doc['id'] ?>" style="grid-column: 1 / -1;">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+                      Add to Calendar
+                    </button>
+                  <?php endif; ?>
+                <?php endif; ?>
               </div>
             </div>
           </article>
@@ -463,6 +476,14 @@ require VIEWS . '/header.php';
               </svg>
               Chat with AI
             </button>
+            <button type="button" id="detailAddToCalendarBtn" class="btn btn--calendar btn--sm btn-add-calendar" style="display:none;" data-doc-id="">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+              Add to Google Calendar
+            </button>
+            <a id="detailViewCalendarLink" href="#" target="_blank" rel="noopener" class="btn btn--calendar btn--sm btn--calendar-synced" style="display:none;">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+              In Google Calendar
+            </a>
           </div>
         </div>
       </div>

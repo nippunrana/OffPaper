@@ -395,6 +395,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const detailFieldsContainer = document.getElementById('detailFieldsContainer');
   const detailDownloadLink = document.getElementById('detailDownloadLink');
   const detailDocChatBtn = document.getElementById('detailDocChatBtn');
+  const detailAddToCalendarBtn = document.getElementById('detailAddToCalendarBtn');
+  const detailViewCalendarLink = document.getElementById('detailViewCalendarLink');
 
   openDetailBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -418,6 +420,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (detailDocDate) detailDocDate.textContent = doc.created_at || '';
     if (detailDownloadLink) detailDownloadLink.href = doc.file_path || '#';
     if (detailDocChatBtn) detailDocChatBtn.setAttribute('data-open-doc-chat', JSON.stringify(doc));
+
+    // Calendar sync button in detail modal footer
+    const hasDeadline = doc.extracted && doc.extracted.deadline;
+    const calendarLink = hasDeadline ? doc.extracted.deadline.calendar_html_link : null;
+
+    if (detailAddToCalendarBtn && detailViewCalendarLink) {
+      if (hasDeadline) {
+        if (calendarLink) {
+          detailAddToCalendarBtn.style.display = 'none';
+          detailViewCalendarLink.style.display = 'inline-flex';
+          detailViewCalendarLink.href = calendarLink;
+        } else {
+          detailAddToCalendarBtn.style.display = 'inline-flex';
+          detailAddToCalendarBtn.setAttribute('data-doc-id', doc.id);
+          detailAddToCalendarBtn.disabled = false;
+          detailAddToCalendarBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+            Add to Google Calendar
+          `;
+          detailViewCalendarLink.style.display = 'none';
+        }
+      } else {
+        detailAddToCalendarBtn.style.display = 'none';
+        detailViewCalendarLink.style.display = 'none';
+      }
+    }
 
     // Status tag
     if (detailDocStatus) {
@@ -557,6 +585,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="doc-field"><span class="doc-field__label">Issuer:</span> <span class="doc-field__value">${secData.issuer_or_organization || 'N/A'}</span></div>
                 <div style="margin-top:var(--space-2);"><span class="doc-field__label">Action Required:</span> <p style="font-size:var(--text-xs);margin:0;">${escapeHtml(secData.action_required || 'N/A')}</p></div>
               `;
+
+              if (secData.calendar_html_link) {
+                bodyHtml += `
+                  <div style="margin-top:var(--space-3);">
+                    <a href="${escapeHtml(secData.calendar_html_link)}" target="_blank" rel="noopener" class="btn btn--calendar btn--sm btn--calendar-synced">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+                      In Google Calendar
+                    </a>
+                  </div>
+                `;
+              } else {
+                bodyHtml += `
+                  <div style="margin-top:var(--space-3);">
+                    <button type="button" class="btn btn--calendar btn--sm btn-add-calendar" data-doc-id="${doc.id}">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+                      Add to Google Calendar
+                    </button>
+                  </div>
+                `;
+              }
             }
             // Prescription renderer
             else if (catKey === 'prescription') {
@@ -696,6 +744,83 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && docDetailModal && docDetailModal.classList.contains('is-open')) {
       closeDocumentDetail();
+    }
+  });
+
+  // --- ADD TO GOOGLE CALENDAR ACTION HANDLER ---
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-add-calendar');
+    if (!btn) return;
+    e.preventDefault();
+
+    const docId = btn.getAttribute('data-doc-id');
+    if (!docId) return;
+
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `⏳ Adding to Calendar...`;
+
+    const targetCalendarUrl = document.body.dataset.calendarUrl || 'api/add_to_calendar.php';
+
+    try {
+      const resp = await fetch(targetCalendarUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ document_id: docId })
+      });
+
+      const responseText = await resp.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error('Failed to parse calendar response as JSON:', responseText);
+        throw new Error(`Server returned HTTP ${resp.status}`);
+      }
+
+      if (data.ok) {
+        // Replace all matching buttons for this docId on the page with synced link
+        const allMatchingBtns = document.querySelectorAll(`.btn-add-calendar[data-doc-id="${docId}"]`);
+        allMatchingBtns.forEach(b => {
+          const link = document.createElement('a');
+          link.href = data.html_link || '#';
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.className = 'btn btn--calendar btn--sm btn--calendar-synced';
+          if (b.style.gridColumn) link.style.gridColumn = b.style.gridColumn;
+          link.innerHTML = `
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+            In Google Calendar
+          `;
+          b.replaceWith(link);
+        });
+
+        if (detailAddToCalendarBtn && detailAddToCalendarBtn.getAttribute('data-doc-id') === String(docId)) {
+          detailAddToCalendarBtn.style.display = 'none';
+          if (detailViewCalendarLink) {
+            detailViewCalendarLink.style.display = 'inline-flex';
+            detailViewCalendarLink.href = data.html_link || '#';
+          }
+        }
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+        if (data.auth_url) {
+          if (confirm(`${data.error}\n\nWould you like to connect your Google account now?`)) {
+            window.location.href = data.auth_url;
+          }
+        } else {
+          alert(data.error || 'Failed to add event to Google Calendar.');
+        }
+      }
+    } catch (err) {
+      console.error('Calendar sync error:', err);
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+      alert('An unexpected error occurred while adding to Google Calendar.');
     }
   });
 });

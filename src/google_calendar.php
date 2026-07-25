@@ -68,7 +68,11 @@ function google_calendar_add_event(int $userId, array $eventData): array
 {
     $token = google_get_valid_access_token($userId);
     if ($token === null) {
-        return ['ok' => false, 'error' => 'Google Calendar access is not authorized or token expired.'];
+        return [
+            'ok' => false,
+            'error' => 'Google Calendar access is not authorized or token expired.',
+            'auth_needed' => true,
+        ];
     }
 
     $ch = curl_init('https://www.googleapis.com/calendar/v3/calendars/primary/events');
@@ -88,7 +92,12 @@ function google_calendar_add_event(int $userId, array $eventData): array
     if ($response === false || ($status !== 200 && $status !== 201)) {
         $data = json_decode((string) $response, true);
         $errMsg = $data['error']['message'] ?? 'Failed to create Google Calendar event.';
-        return ['ok' => false, 'error' => $errMsg];
+        $isAuthError = ($status === 401 || (isset($data['error']['code']) && $data['error']['code'] === 401));
+        return [
+            'ok' => false,
+            'error' => $errMsg,
+            'auth_needed' => $isAuthError,
+        ];
     }
 
     $data = json_decode($response, true);
