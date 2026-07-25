@@ -127,6 +127,7 @@ require VIEWS . '/header.php';
       <?php endif; ?>
     </header>
 
+    <?php if (!$hasUploads): ?>
     <!-- Onboarding Step Indicator -->
     <ol class="getting-started">
       <li class="getting-started__step is-done">
@@ -134,11 +135,12 @@ require VIEWS . '/header.php';
         Account created
       </li>
       <li class="getting-started__connector" aria-hidden="true"></li>
-      <li class="getting-started__step <?= $hasUploads ? 'is-done' : 'is-current' ?>">
-        <span class="getting-started__marker" aria-hidden="true"><?= $hasUploads ? '&check;' : '' ?></span>
-        <?= $hasUploads ? 'First document scanned' : 'Scan your first document' ?>
+      <li class="getting-started__step is-current">
+        <span class="getting-started__marker" aria-hidden="true"></span>
+        Scan your first document
       </li>
     </ol>
+    <?php endif; ?>
 
     <?php if (!$hasUploads): ?>
       <!-- EMPTY STATE FOR FIRST TIME USERS -->
