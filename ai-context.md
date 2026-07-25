@@ -44,6 +44,7 @@ Implemented in `src/ai/document_upload/DocumentPipeline.php` + `DocumentSchemas.
 - `public/api/chat.php` — per-document Q&A. Loads the `user_uploads` row (auth + ownership checked), builds a system prompt (bullet-point, bolded-highlights style) plus a context block of the doc's summary/categories/`extracted_json`, re-attaches the original image file, and calls Gemini (`gemini-3.5-flash-lite`) fresh on every message. GET requests return `chat_history`, `summary`, and `plan_snapshots` (from `extracted_json`).
 - **Modes:** normal chat or `plan_assist` (activated automatically for `plan`-type docs, or via `data-chat-mode="plan_assist"`). Plan assist uses a different system prompt focused on strengthening, questioning, and prioritising the plan.
 - Frontend: `views/chat_modal.php` + `public/assets/js/doc-chat.js` + `public/assets/css/chat.css`. The chat API endpoint URL is overridable via `window.OFFPAPER_CHAT_URL` (defaults to `api/chat.php`). The finalise endpoint is overridable via `window.OFFPAPER_CHAT_FINALISE_URL` (defaults to `api/chat_finalise_plan.php`).
+- **Plan-assist session loading:** On modal open in `plan_assist` mode, `loadPlanAssistSession()` makes a single `chat.php` GET call and renders, in order: the latest snapshot's contextual `greeting` (falling back to the generic `renderPlanAssistGreeting()` if no snapshot exists), then chat history, then the plan panel/pill/version tabs. This replaces separately calling `renderPlanAssistGreeting()` + `loadPlanSnapshot()` up front. `loadPlanSnapshot()` is retained only for non-plan-assist snapshot refreshes.
 - **Speech-to-Text (STT):** A microphone button (`#docChatMicBtn`) in the chat input bar allows users to speak their prompts. Recorded audio chunks (`MediaRecorder`) are sent to `public/api/transcribe_audio.php`, which utilizes `gemini-3.5-flash-lite` for verbatim speech transcription before placing the text in the input field.
 - **Note:** `chat.php` persists conversation history for **all document types** in `user_uploads_knowledgebase`. History is loaded on modal open and sent as context on subsequent messages. A `mode=clear_history` POST wipes history to support the "New Chat" button in the frontend.
 - **Auto-recap on close:** `public/api/chat_finalize.php` (note: US spelling, distinct from `chat_finalise_plan.php` below) is fired fire-and-forget by `doc-chat.js` when the modal is closed in `plan_assist` mode and at least one new message was sent that session. It summarizes the chat history into a plain-text 2–4 sentence recap via Gemini and upserts it into `user_uploads_knowledgebase.summary` — a lightweight background recap, separate from the explicit "Finalise the Plan" snapshot flow.
@@ -55,10 +56,10 @@ Activated only in `plan_assist` mode (plan-type documents). Allows the user to s
 
 **Flow:**
 1. `public/api/chat_finalise_plan.php` (POST `{ document_id, uuid }`) loads the full chat history from `user_uploads_knowledgebase`.
-2. Calls Gemini with a structured synthesis prompt → produces a markdown plan with `## 🎯 Goal`, `## ✅ Action Items`, `## 📅 Timeline`, `## ⚠️ Risks & Notes`, `## 💡 Next Steps` sections.
-3. Prepends the new snapshot `{ finalised_at, plan_text }` to `extracted_json->plan_snapshots` (max 3 kept, newest first, oldest dropped).
+2. Calls Gemini with a structured synthesis prompt → produces a markdown plan with `## 🎯 Goal`, `## ✅ Action Items`, `## 📅 Timeline`, `## ⚠️ Risks & Notes`, `## 💡 Next Steps` sections, followed by a `---GREETING---` delimiter and a one-sentence (max 25 words) contextual greeting referencing the plan's goal, for welcoming the user back next time.
+3. Splits the response on `---GREETING---` into `planText` and `greeting`, then prepends the new snapshot `{ finalised_at, plan_text, greeting }` to `extracted_json->plan_snapshots` (max 3 kept, newest first, oldest dropped).
 4. Saves updated `extracted_json` to `user_uploads`, clears `chat_history` in `user_uploads_knowledgebase`.
-5. Returns `{ ok, plan_text, finalised_at, snapshot_count }`.
+5. Returns `{ ok, plan_text, finalised_at, greeting, snapshot_count }`.
 
 **Frontend UI — Split-Panel Chat Modal:**
 - The modal is full-screen wide (max 1080px), 90vh tall, split into two panes:
@@ -75,7 +76,7 @@ Activated only in `plan_assist` mode (plan-type documents). Allows the user to s
 ## Database
 3 tables in PostgreSQL — see [`db/schema.sql`](db/schema.sql) and [`db/database_structure.md`](db/database_structure.md) for full column/index reference:
 - **`users`** — email/password auth + Google profile & OAuth tokens (`google_access_token`, `google_refresh_token`, `google_token_expires_at`) for offline Calendar access.
-- **`user_uploads`** — one row per scanned document: storage path, mime/size, `status` (`pending`/`processed`/`error`), `doc_type` (primary category), `extracted_json` (full pipeline output). **`extracted_json` also holds `plan_snapshots: [{ finalised_at, plan_text }, ...]` (max 3, newest first)** for plan-type documents.
+- **`user_uploads`** — one row per scanned document: storage path, mime/size, `status` (`pending`/`processed`/`error`), `doc_type` (primary category), `extracted_json` (full pipeline output). **`extracted_json` also holds `plan_snapshots: [{ finalised_at, plan_text, greeting }, ...]` (max 3, newest first)** for plan-type documents.
 - **`user_uploads_knowledgebase`** — `chat_history` (JSONB array of `{ role, text, ts }` turns) and `summary` per document. Fully wired; history persisted on every chat message, cleared on "New Chat" or after plan finalisation.
 
 ## Key Files Reference
@@ -84,7 +85,7 @@ Activated only in `plan_assist` mode (plan-type documents). Allows the user to s
 - [`src/ai/document_upload/DocumentPipeline.php`](src/ai/document_upload/DocumentPipeline.php) — 2-pass orchestration + DB persistence.
 - [`src/ai/GeminiClient.php`](src/ai/GeminiClient.php) — low-level Gemini REST client.
 - [`public/upload.php`](public/upload.php) — capture/upload endpoint, triggers the AI pipeline.
-- [`public/dashboard.php`](public/dashboard.php) — main UI: stats, category filter tabs, document grid/cards, detail modal.
+- [`public/dashboard.php`](public/dashboard.php) — main UI: stats, category filter tabs, document grid/cards, detail modal, and a "Scan your first document" onboarding step indicator shown only when `!$hasUploads` (hidden once the user has any upload).
 - [`public/api/chat.php`](public/api/chat.php) — document Q&A + history persistence; GET also returns `plan_snapshots`.
 - [`public/api/transcribe_audio.php`](public/api/transcribe_audio.php) — Speech-to-Text audio transcription endpoint powered by Gemini 3.5 Flash Lite.
 - [`public/api/chat_finalize.php`](public/api/chat_finalize.php) — fire-and-forget recap summary on modal close (plan_assist only); writes to `user_uploads_knowledgebase.summary`.
