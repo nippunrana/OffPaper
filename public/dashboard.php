@@ -7,7 +7,8 @@ $display_name = $user['name'] ?: ucfirst(explode('@', $user['email'])[0]);
 
 $page_title = 'Dashboard';
 $page_nav = 'dashboard';
-$page_css = ['dashboard.css'];
+$page_css = ['dashboard.css', 'scan.css'];
+$page_js = ['camera.js'];
 $body_class = 'page-dashboard';
 
 require VIEWS . '/header.php';
@@ -41,8 +42,7 @@ require VIEWS . '/header.php';
       </span>
       <h2>Scan your first document</h2>
       <p>Photograph a bill, prescription, or handwritten note and OffPaper will read it for you.</p>
-      <button type="button" class="btn btn--primary btn--lg" disabled aria-disabled="true">Scan a document</button>
-      <span class="primary-action-card__badge">Coming soon</span>
+      <button type="button" class="btn btn--primary btn--lg" data-open-scan-modal>Scan a document</button>
     </div>
 
     <div class="category-grid">
@@ -64,5 +64,7 @@ require VIEWS . '/header.php';
     </div>
   </div>
 </section>
+
+<?php require VIEWS . '/scan_modal.php'; ?>
 
 <?php require VIEWS . '/footer.php'; ?>

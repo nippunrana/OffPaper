@@ -16,6 +16,8 @@ build/
 *.log
 .DS_Store
 
-
+# User uploads
+user-uploads/
+public/user-uploads/
 
 CLAUDE.md

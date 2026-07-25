@@ -12,3 +12,21 @@ CREATE TABLE IF NOT EXISTS users (
     google_token_expires_at TIMESTAMPTZ,         -- Expiration timestamp for access token
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS user_uploads (
+    id                BIGSERIAL PRIMARY KEY,
+    uuid              UUID        NOT NULL UNIQUE,
+    user_id           BIGINT      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    filename          TEXT        NOT NULL,         -- stored UUID filename e.g. 550e8400-e29b-41d4-a716-446655440000.jpg
+    original_filename TEXT        NOT NULL,         -- original uploaded name
+    file_path         TEXT        NOT NULL,         -- relative path e.g. user-uploads/550e8400-e29b-41d4-a716-446655440000.jpg
+    file_size         BIGINT      NOT NULL,         -- size in bytes
+    mime_type         TEXT        NOT NULL,         -- e.g. image/jpeg, image/png
+    source            TEXT        NOT NULL DEFAULT 'camera', -- 'camera' or 'file_input'
+    status            TEXT        NOT NULL DEFAULT 'pending', -- 'pending', 'processed', 'error'
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_uploads_user_id ON user_uploads(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_uploads_uuid ON user_uploads(uuid);
+
