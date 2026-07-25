@@ -1,0 +1,145 @@
+{
+  "skill_name": "python-engineering",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a Python function that reads a CSV file of sales records, filters out rows where the amount is 0 or negative, and writes the valid rows to a new JSON file. The function should be well-typed and handle the file not existing.",
+      "expected_output": "A Python module with three clearly separated functions following the Load→Filter→Export pipeline pattern: one to read CSV, one to filter rows, one to write JSON. Each function is typed with annotations (parameters and return type). The main orchestrator calls them in sequence. The file-not-found case is handled with a specific except clause (FileNotFoundError, not bare except). No boolean flag parameters.",
+      "files": [],
+      "assertions": [
+        "Code is organized as separate load, filter, and export functions (pipeline pattern)",
+        "All function parameters and return types are annotated",
+        "FileNotFoundError (or OSError) is caught specifically, not bare except",
+        "No bare `except:` or `except Exception:` without re-raising",
+        "Functions each do one thing (no function both reads and filters)",
+        "Type hints use list[dict] or similar concrete types for return values",
+        "No boolean flag parameters in any function signature",
+        "The main/orchestrator function calls the three stages in sequence",
+        "No magic numbers or unexplained literals"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I have this non-Pythonic class that wraps a legacy SDK. Refactor it to be idiomatic Python:\n\nclass LegacyWrapper:\n    def get_size(self):\n        return self._sdk.get_count()\n    def get_item(self, i):\n        return self._sdk.fetch_by_index(i)\n    def open_connection(self):\n        self._sdk.connect()\n    def close_connection(self):\n        self._sdk.disconnect()",
+      "expected_output": "A refactored class implementing __len__ (wrapping get_count), __getitem__ (wrapping fetch_by_index, raising IndexError at boundary), __enter__ (calling connect, returning self), and __exit__ (calling disconnect with cleanup). The refactored class should work with len(), for loops, and the with statement without any additional code. @property used if any getters need to be exposed as attributes.",
+      "files": [],
+      "assertions": [
+        "__len__ is implemented to replace get_size/get_count",
+        "__getitem__ raises IndexError when index is out of bounds",
+        "__enter__ calls connect and returns self (or the adapter object)",
+        "__exit__ calls disconnect and handles exceptions appropriately",
+        "__exit__ returns False (or None) to allow exceptions to propagate",
+        "The refactored class works with `for item in obj:` without a separate __iter__",
+        "The refactored class works with `with obj as elem:` syntax",
+        "No get_size(), get_item(), open_connection(), close_connection() methods remain"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add type hints and set up Mypy for this existing Python module:\n\ndef process_order(order_id, items, discount=None):\n    total = sum(item['price'] for item in items)\n    if discount:\n        total = total * (1 - discount)\n    return {'order_id': order_id, 'total': total}\n\ndef email_receipt(order, email):\n    subject = f'Order {order[\"order_id\"]} confirmed'\n    send_email(email, subject, str(order['total']))",
+      "expected_output": "Type-annotated versions of both functions. order_id: int (or str), items: list[dict] or a TypedDict, discount: Optional[float] = None, return type TypedDict or dict with explicit keys. __init__ -> None if applicable. A mypy configuration snippet in pyproject.toml. The Optional type is explicit (not just =None without annotation).",
+      "files": [],
+      "assertions": [
+        "All function parameters are type-annotated",
+        "All functions have explicit return type annotations",
+        "discount parameter uses Optional[float] or float | None, not just float with =None",
+        "A TypedDict is defined for the order dict structure (optional but recommended)",
+        "A pyproject.toml snippet is provided with [tool.mypy] section",
+        "mypy configuration includes python_version",
+        "The annotation style is consistent (either Optional[T] everywhere or T | None everywhere)",
+        "No type-encoding in variable names (no order_id_str, etc.)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "This Python class violates SOLID principles. Identify the violations and refactor it:\n\nclass OrderManager:\n    def add_item(self, item):\n        self.items.append(item)\n    \n    def calculate_total(self):\n        return sum(item['price'] for item in self.items)\n    \n    def process_payment(self, payment_type):\n        if payment_type == 'debit':\n            # process debit\n            pass\n        elif payment_type == 'credit':\n            # process credit\n            pass\n    \n    def send_confirmation_email(self, email):\n        # send email\n        pass",
+      "expected_output": "Identification of at least: SRP violation (Order handles payment AND email), OCP violation (if/elif on payment_type must be modified to add new types), possibly DIP violation (concrete payment logic in Order). Refactored code should: split into Order (items, total), a PaymentProcessor Protocol or ABC, concrete DebitProcessor/CreditProcessor classes, and an EmailService. PaymentProcessor implementations should have a consistent pay(order) signature (LSP). No if/elif on type strings.",
+      "files": [],
+      "assertions": [
+        "SRP violation is identified: OrderManager does too many things",
+        "OCP violation is identified: if/elif on payment_type requires modification to extend",
+        "Refactored Order class only handles items and total (not payment or email)",
+        "A PaymentProcessor Protocol or ABC is defined with a consistent pay() signature",
+        "At least two concrete processor classes are shown (DebitProcessor, CreditProcessor)",
+        "Both processor classes have identical pay() method signatures (LSP preserved)",
+        "Email sending is extracted to a separate class or function",
+        "No if/elif or match/case on payment type strings in the core Order logic",
+        "DIP is addressed: Order or caller receives a PaymentProcessor via constructor injection"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Set up a complete Python project with Ruff, Mypy, and Pytest. Show me the pyproject.toml, the test structure, and example test patterns for a function called `validate_email(email: str) -> bool`.",
+      "expected_output": "A complete pyproject.toml with [build-system], [project], [tool.ruff], [tool.ruff.lint] with select=[E,F,I,B], [tool.ruff.format], [tool.mypy], and [tool.pytest.ini_options]. Test file using plain assert (not unittest), at least one parametrize example testing multiple email formats, and a fixture if applicable. Line length set to 88 in [tool.ruff]. Ruff command shown as ruff check --fix && ruff format.",
+      "files": [],
+      "assertions": [
+        "pyproject.toml contains [build-system] table",
+        "pyproject.toml contains [project] table with name, requires-python",
+        "[tool.ruff] section has line-length = 88",
+        "[tool.ruff.lint] has select including E, F, I, B",
+        "[tool.mypy] section is present with at least python_version",
+        "[tool.pytest.ini_options] is present with testpaths",
+        "Test file uses plain assert statements, not self.assertEqual",
+        "@pytest.mark.parametrize is used to test multiple email inputs",
+        "The verification loop (ruff check --fix, ruff format, mypy, pytest) is mentioned",
+        "No unittest.TestCase usage in the example tests"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Why is my JavaScript fetch not returning data? The response seems empty.",
+      "expected_output": "This request should NOT trigger the python-engineering skill. It is a JavaScript debugging task that belongs to the debugger skill.",
+      "files": [],
+      "assertions": [
+        "Skill is NOT triggered for this JavaScript debugging request",
+        "If the skill does respond, it should redirect to the debugger skill"
+      ],
+      "boundary_test": true,
+      "expected_skill": "debugger"
+    },
+    {
+      "id": 7,
+      "prompt": "I want to refactor this Python function that has 5 positional arguments and a boolean flag. It creates a report and optionally emails it:\n\ndef generate_report(title, start_date, end_date, format, send_email=False):\n    data = fetch_data(start_date, end_date)\n    report = format_report(data, title, format)\n    if send_email:\n        email_report(report)\n    return report",
+      "expected_output": "Refactored code that: (1) defines a ReportConfig dataclass or TypedDict with title, start_date, end_date, format fields, (2) splits generate_report into generate_report(config: ReportConfig) -> Report and send_report(report: Report, recipient: str) -> None — eliminating the boolean flag by splitting into two explicit functions, (3) adds type annotations throughout.",
+      "files": [],
+      "assertions": [
+        "Boolean flag parameter (send_email) is eliminated",
+        "The original function is split into at least two functions: one to generate, one to send",
+        "A dataclass or TypedDict is defined to bundle the 4+ parameters",
+        "All functions have type annotations",
+        "The caller decides whether to send — it is not a flag inside the generator",
+        "No function has more than 2 non-self parameters after refactoring",
+        "SRP is preserved: each function does exactly one thing"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Remove all unused imports from my PHP Laravel controller file.",
+      "expected_output": "This request should NOT trigger the python-engineering skill. Removing dead code from PHP belongs to the code-security-and-cleanup skill.",
+      "files": [],
+      "assertions": [
+        "Skill is NOT triggered for this PHP dead-code-removal request",
+        "If the skill does respond, it should redirect to code-security-and-cleanup"
+      ],
+      "boundary_test": true,
+      "expected_skill": "code-security-and-cleanup"
+    },
+    {
+      "id": 9,
+      "prompt": "Write a command-line Python script that takes an input JSON file path and an output CSV path as arguments, reads an array of records from the JSON, filters out records where the 'active' field is false, and writes the remaining records to the CSV. Handle the case where the input file doesn't exist.",
+      "expected_output": "A Python script with: (1) an `if __name__ == '__main__': raise SystemExit(main())` entry point, (2) argparse with two positional Path arguments (input_json, output_csv), (3) a `main() -> int` function that returns 0 on success and a non-zero int on error, (4) specific exception handling for FileNotFoundError (not bare except) that logs an error and returns 1, (5) type annotations on all function signatures, (6) logging (not just print) for diagnostic messages, (7) pathlib.Path for file operations.",
+      "files": [],
+      "assertions": [
+        "Script has `if __name__ == '__main__': raise SystemExit(main())` entry point",
+        "argparse is used to define the two file path arguments",
+        "main() has return type annotation `-> int`",
+        "main() returns 0 on success",
+        "FileNotFoundError is caught specifically — no bare `except:` or `except Exception:`",
+        "The except clause returns a non-zero exit code (e.g. 1), not sys.exit()",
+        "All function parameters and return types are annotated",
+        "logging is used for diagnostic messages (not exclusively print)",
+        "pathlib.Path is used for file path handling"
+      ]
+    }
+  ]
+}

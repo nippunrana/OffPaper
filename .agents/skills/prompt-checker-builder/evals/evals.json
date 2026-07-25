@@ -1,0 +1,47 @@
+{
+  "skill_name": "prompt-checker-and-builder",
+  "evals": [
+    {
+      "id": 0,
+      "name": "checker-bloat-and-vagueness",
+      "prompt": "can you check this prompt before I run it on my codebase? i feel like its not great but not sure why:\n\n\"You are an absolute genius senior engineer, the best in the world, I really really need you to NAIL this one, please try your very hardest, my job depends on it. I'll tip you $200 if you do a good job!! Here is my whole dashboard component, please make it better and clean it up and make it look nicer:\n\nimport React, { useState, useEffect } from 'react';\n... (whole component, plus '6 more components just like this one I'd paste too') ...\n\nMake it good, you know what good looks like. Thanks so much!!!\"\n\nWhat do you think, is this prompt going to work well?",
+      "expected_output": "Flags motivational filler, vagueness, missing output contract, context bloat (pasting whole components vs paths/ranges), gives a grade, explains the why, presents a plan before a final prompt.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "builder-vague-feature",
+      "prompt": "I want to write a good prompt to give to Claude. The task is: add a CSV export feature to my React admin table so users can download the data they're looking at. Can you help me build the prompt? I haven't written anything yet, I just have the idea.",
+      "expected_output": "Builder mode: 2-3 targeted questions each with a proactive suggestion, surfaces verifiability/tooling, plan before final prompt.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "checker-verifiability-trap",
+      "prompt": "Review this prompt for me, I'm about to paste it into Cursor:\n\n\"Go through every file in the src/ directory (there are around 230 of them). Count exactly how many times we call the deprecated oldLogger() function across the whole codebase, and tell me the total number. Then rename every single occurrence of oldLogger to newLogger. Also add up the total number of lines of code in the project and report it. Do all of this from your understanding of the files.\"\n\nIs this a solid prompt?",
+      "expected_output": "Flags counting/summing/rename as jagged-intelligence valleys, recommends deterministic tools + verification, plan before final prompt.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "builder-labreport-extraction",
+      "prompt": "I'm building an n8n workflow. One of the nodes is an AI agent that receives a lab report (uploaded as an image/PDF) and needs to pull out the test results so the next node can store them in our database. Can you help me write the prompt for that agent? I haven't drafted it yet.",
+      "expected_output": "Builder mode for a production/multimodal extraction prompt: should raise grounding/anti-hallucination (use only what's visible, mark illegible/absent rather than guess), recommend a concrete structured output schema (JSON fields/types, null for missing), address unattended oversight (confidence signal + route low-confidence to human review, since the node can't stop and ask), tailor to the production/template + downstream-DB context, and ask 2-3 questions with proactive suggestions before presenting a plan/final prompt.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "checker-precision-arithmetic",
+      "prompt": "Can you review this prompt? It's for an AI step in my automation that processes invoices:\n\n\"You are given the line items of an invoice. Calculate the subtotal, apply 8% tax, subtract any discount mentioned, and return the final total the customer owes. Also tell me the average line-item price.\"\n\nWill this be reliable?",
+      "expected_output": "Checker mode for a precision task: should identify that having the LLM compute subtotal/tax/discount/average directly is unreliable (arithmetic is a capability valley / jagged intelligence), recommend extracting operands with the LLM but computing the totals in a deterministic step (code node/function/formula), flag the conditional 'discount if mentioned' multi-step risk / recommend decomposition, give a grade, explain the why, and present a plan before a final improved prompt.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "builder-sportsvideo-analysis",
+      "prompt": "I have a web app where a user uploads a short video of themselves playing cricket (batting), and an AI analyzes their technique and gives tips to improve. I need to write the prompt the vision model uses. Right now my prompt is basically just 'analyze this cricket batting video and give feedback to improve.' Can you help me make it good?",
+      "expected_output": "Builder/checker for a multimodal production prompt: should raise grounding (analyze only what's visible, mark not-visible rather than fabricate), recommend a rubric of specific technique elements to assess (separating describe from judge) instead of generic 'analyze', recommend a structured output contract (per-element rating + actionable cue) plus a confidence signal, address the production/app context (unattended, consistency, low-confidence e.g. poor camera angle), and ask 2-3 questions with proactive suggestions / present a plan before the final prompt.",
+      "files": []
+    }
+  ]
+}

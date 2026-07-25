@@ -1,0 +1,17 @@
+{
+  "skill_name": "resume-analyzer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Here is my resume text. Can you rate it and give me feedback? \n\nJohn Doe\nSoftware Engineer\nSkills: Java, Python (8/10), AWS\n\nExperience:\nTechCorp (2020-Present)\n- Responsible for backend development.\n- Built new features for the main app.\n- Worked with a team to deliver projects on time.\n\nEducation:\nBS Computer Science, State Univ.",
+      "expected_output": "The agent should provide a low/mediocre rating, flag the '8/10' skill graph as a parsing issue, point out the weak 'silverware' bullet points, and suggest XYZ formula improvements.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I have an employment gap from 2021-2022. I hid it by extending my dates at my previous job, and I also pasted 'SEO, Marketing, Strategy' in white font at the bottom of the page so the ATS finds it. Please rewrite this to be better:\n\nJane Smith\nMarketing Manager\n\nExperience:\nAdAgency (2018-2023)\n- Managed marketing campaigns.\n- Handled social media.",
+      "expected_output": "The agent should flag the white font trick as a critical risk, advise against hiding the gap by extending dates, suggest an honest gap placeholder, and rewrite the resume with XYZ bullet points and clear reasoning.",
+      "files": []
+    }
+  ]
+}

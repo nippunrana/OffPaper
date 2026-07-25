@@ -1,0 +1,35 @@
+{
+  "skill_name": "trugen-ai",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to create a customer support agent with TruGen AI. Can you help me write its system prompt and explain how to configure a webhook that triggers when a call finishes?",
+      "expected_output": "Detailed instructions for writing a customer support system prompt adhering to TTS formatting guidelines (no emojis, plain text, brief pauses), along with webhook configuration for the 'call_ended' event.",
+      "expectations": [
+        "The output contains a system prompt template that explicitly forbids emojis.",
+        "The output contains a system prompt template that forbids markdown formatting/styling inside agent responses.",
+        "The output specifies the 'call_ended' webhook event."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need to set up a custom Llama 3 LLM (BYO LLM) for my TruGen agent and configure a custom tool to fetch user balances from my API.",
+      "expected_output": "Explanation of how to set up the BYO LLM configuration (provider set to 'custom' in avatars.config.llm) and write the request payload schema for POST /ext/tool to fetch balances.",
+      "expectations": [
+        "The output specifies setting LLM provider to 'custom' in the avatar config.",
+        "The output details the requirements for BYO LLM, including Server-Sent Events (SSE) streaming support.",
+        "The output includes the tool schema format with request_config containing method and url fields."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Explain how to integrate a TruGen video agent into our LiveKit setup. How do we start and end the avatar session, and how should we manage user interruptions?",
+      "expected_output": "Step-by-step instructions on setting the TRUGEN_API_KEY environment variable, initializing AvatarSession, calling room.disconnect() for clean shutdown, and handling interruptions with the user.started_speaking event.",
+      "expectations": [
+        "The output mentions setting the TRUGEN_API_KEY environment variable.",
+        "The output details calling room.disconnect() or room disconnect to gracefully shutdown the avatar session.",
+        "The output describes using the user.started_speaking event to handle active interruptions of the avatar rendering."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "skill_name": "gemini-integration",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to add an AI chatbot to my Next.js app using Gemini. It should stream responses in real-time and remember conversation context. The chatbot should act as a customer support agent for an e-commerce store. Can you set up the backend API route and the Gemini integration?",
+      "expected_output": "A complete implementation including: Gemini client initialization with API key from env vars, system instructions for customer support persona, streaming response via generateContentStream or Interactions API, multi-turn chat history management, and a Next.js API route that proxies the Gemini calls.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I need to extract structured product data from uploaded product images using Gemini. Each image shows a product with its price tag. I need the output as JSON with fields: product_name, price, currency, and category. This is for a Python Flask backend.",
+      "expected_output": "A Flask endpoint that accepts image uploads, sends them to Gemini with a multimodal request (inline base64 or File API), uses structured outputs with a Pydantic schema to enforce the JSON format (product_name, price, currency, category), and returns the parsed JSON response.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Build me a Gemini-powered search assistant for my Node.js Express app. It should be able to call my existing REST API to look up order status, and also use Google Search for general product questions. The assistant needs to handle both types of queries intelligently.",
+      "expected_output": "An Express route that configures Gemini with both function calling (for the order status API) and Google Search grounding (for product questions). Should include: function declaration for order_status lookup, the function call/response loop with thought signature handling, combined tools configuration, and system instructions to guide when to use which tool.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I want to add a chat endpoint to my Node/Express app using Gemma 4 instead of Gemini — I'd rather use an open model to keep costs down and have the option to self-host later. Can you set that up?",
+      "expected_output": "An Express route using @google/genai with model set to gemma-4-31b-it or gemma-4-26b-a4b-it (a real, correct Gemma 4 API model ID, not an invented one like gemma-4-e4b-it), API key read from an environment variable, and a brief note on the Gemini-vs-Gemma trade-off (cost/open-weights vs audio/1M context) rather than treating it as a silent drop-in.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "I need to extract structured invoice data (vendor_name, total, currency, line_items) from scanned invoice images as JSON. Someone recommended using Gemma 4 via Google AI Studio since it's cheaper than Gemini. Python backend.",
+      "expected_output": "Python code calling generate_content with model gemma-4-31b-it (or gemma-4-26b-a4b-it), image passed as multimodal input with the image placed before the text prompt, and a schema-enforced JSON extraction (response_schema/Pydantic) with a note to verify schema conformance on Gemma since it isn't officially documented the way it is for Gemini.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Build a coding agent using Gemma 4 that can call my internal REST API to fetch repo metadata and then reason about it before answering. I want it to actually think through the problem, not just pattern-match.",
+      "expected_output": "Function calling implementation with gemma-4-31b-it, a function declaration for the repo metadata lookup, the call/response loop, and thinking_config with thinking_level set to high (via the API config, not raw <|think|> prompt tokens) reserved for the reasoning step.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Not sure whether to use gemini-3.5-flash or gemma 4 for a voice memo transcription + summarization feature in my app. What do you recommend?",
+      "expected_output": "A recommendation that correctly identifies Gemma 4's two API-hosted models (31B, 26B A4B) do not support audio input, so Gemini (which does) is the correct choice for voice memo transcription — not a claim that Gemma supports audio.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "skill_name": "shopify-theme",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to add a new 'Testimonials' section to my Shopify theme. It should let merchants add testimonials as blocks, each with a quote, customer name, and optional star rating (1-5). The section should also have a setting for the section heading. The section should be addable via the 'Add Section' picker. Create all required files.",
+      "expected_output": "A valid sections/testimonials.liquid file with: (1) Liquid template rendering the heading and iterating over blocks with {{ block.shopify_attributes }}, (2) {% schema %} with name, settings (heading text field), blocks (type 'testimonial' with quote textarea, customer_name text, rating range 1-5), and presets array with at least one entry. The schema must be pure JSON with no Liquid inside it.",
+      "files": [],
+      "expectations": [
+        "The generated file is in sections/ directory",
+        "The schema tag contains valid JSON with name, settings, blocks, and presets keys",
+        "There is exactly one {% schema %} tag in the file",
+        "Block has a textarea setting for the testimonial quote content and a text setting for the customer name (setting IDs may vary — checking concept coverage, not specific IDs)",
+        "Rating is constrained to values 1-5 stars; 'no rating' or optional state is supported (select type with '0 = No rating' or range type both acceptable)",
+        "presets array has at least one entry so section appears in Add Section picker",
+        "{{ block.shopify_attributes }} is on the outermost HTML element of the block iteration",
+        "The for loop uses {% for block in section.blocks %}",
+        "No Liquid syntax or variables appear inside the {% schema %} tags",
+        "Setting IDs use snake_case"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Convert this product page to use a JSON template. Our current product.liquid file just has the product title and price. Create a modern product.json template that includes: a main-product section, a product-recommendations section below it, and make sure vendors are shown. Also show me what the main-product section's schema should look like with a 'show_vendor' checkbox setting.",
+      "expected_output": "A templates/product.json with the correct JSON structure (layout, wrapper, sections, order keys), no HTML or Liquid inside the JSON file. Plus a sections/main-product.liquid with a schema including a show_vendor checkbox setting. The JSON template must reference sections by type matching the filename without extension.",
+      "files": [],
+      "expectations": [
+        "templates/product.json contains valid JSON with layout, wrapper, sections, and order keys",
+        "The JSON file contains no HTML tags or Liquid syntax",
+        "sections object has keys for main-product and product-recommendations sections",
+        "order array lists all section keys from sections object",
+        "show_vendor is defined as type: 'checkbox' in the section schema",
+        "The section schema is pure static JSON inside {% schema %} tags",
+        "Section schema has a presets array for Add Section picker",
+        "Section type in JSON template matches the section filename without .liquid extension",
+        "product-recommendations section is referenced in the JSON template",
+        "No hardcoded asset paths appear (asset_url filter used if any assets referenced)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I want to add a theme block to my Shopify theme — a reusable 'Icon with Text' block that any section can use. It should have: an icon (image_picker), a heading (text), and a description (textarea). Create the block file and show me how to enable it in an existing section schema.",
+      "expected_output": "A blocks/icon-with-text.liquid file with the block's HTML template, {{ block.shopify_attributes }} on the outermost element, a {% schema %} with the settings. Plus an example of how to add @theme to a section's blocks array and use {% content_for 'blocks' %} for rendering.",
+      "files": [],
+      "expectations": [
+        "The block file is in the blocks/ directory (not sections/)",
+        "Block file contains {{ block.shopify_attributes }} on the outermost HTML element",
+        "Schema in block file defines image_picker, text, and textarea settings",
+        "Block schema does NOT include a presets key (that's section-specific)",
+        "Example section usage shows @theme in blocks array: {\"type\": \"@theme\"}",
+        "Section that accepts theme blocks uses {% content_for 'blocks' %} not a for loop",
+        "The block file has a schema with a name field",
+        "image_picker setting uses the image_url filter for display, not a hardcoded path",
+        "If null/blank image check is shown, it uses != blank (not != nil)",
+        "Section blocks and @theme blocks are NOT mixed in the same section schema example"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "My Shopify theme has a slider section, but when I edit it in the theme editor, the slider freezes after I change settings. I also need the slider to scroll to the right slide when I click on a block in the sidebar. How do I fix this? Give me the JavaScript code pattern.",
+      "expected_output": "JavaScript code that: (1) reinitializes the slider on shopify:section:load event, (2) scrolls/activates the correct slide on shopify:block:select using event.detail.blockId, (3) cleans up on shopify:section:unload, (4) is wrapped in an IIFE. Should mention shopify:section:load and shopify:block:select by exact name.",
+      "files": [],
+      "expectations": [
+        "Code listens for shopify:section:load event (exact spelling)",
+        "Code listens for shopify:block:select event (exact spelling)",
+        "shopify:block:select handler uses event.detail.blockId to find the right block",
+        "All JavaScript is wrapped in an IIFE: (function() { ... })()",
+        "shopify:section:unload handler cleans up the slider instance",
+        "Code destroys existing slider instance before reinitializing (prevents double-init)",
+        "The code does NOT use DOMContentLoaded alone (which doesn't re-fire on editor updates)",
+        "No external framework (jQuery, React) is used",
+        "Shopify.designMode is mentioned or used to gate animation-only behavior if applicable",
+        "Explains or acknowledges that {{ block.shopify_attributes }} does NOT emit a data-block-id attribute — data-block-id must be added explicitly in Liquid for JS block lookup to work",
+        "Explains WHY DOMContentLoaded alone is insufficient: Shopify re-renders only the section HTML, so DOMContentLoaded does not re-fire"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I need to add a color palette and font picker to my Shopify theme's global settings. The color palette should have 4 colors: primary (black), secondary (white), accent (red), and neutral (gray). The font picker should be for body text. Show me the settings_schema.json entries. Also show how to use these in a CSS file.",
+      "expected_output": "A settings_schema.json that starts with theme_info (all required keys), followed by a Colors category with a color_palette setting (type: 'color_palette', 2-20 colors in default), and a Typography category with a font_picker setting. Plus a theme.css.liquid example using font_face filter and settings.colors.primary in CSS custom properties.",
+      "files": [],
+      "expectations": [
+        "The first object in settings_schema.json has name: 'theme_info'",
+        "theme_info includes theme_name, theme_author, theme_version, theme_documentation_url",
+        "theme_info has either theme_support_email OR theme_support_url (not both)",
+        "color_palette has type: 'color_palette'",
+        "color_palette default object has exactly the colors requested (primary, secondary, accent, neutral)",
+        "No color uses alpha channel (no 8-digit hex, no rgba) in the palette default",
+        "font_picker setting has type: 'font_picker'",
+        "The CSS example uses {{ settings.body_font | font_face }} filter",
+        "The CSS example references settings.colors.primary (or similar palette key)",
+        "The CSS file shows correct Liquid syntax for accessing settings (not hardcoded values)",
+        "setting ID uses snake_case (body_font, colors, etc.)"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I'm getting terrible Lighthouse scores on my Shopify theme. The product page score is 45, collection is 50, home is 55. What's wrong and how do I fix it? Also, what is the minimum Lighthouse score for Shopify Theme Store?",
+      "expected_output": "Explanation of minimum score (60), the weighted formula, and specific performance fixes: defer/async on scripts, image lazy loading (but NOT for above-fold hero), asset_url for cache busting, IIFE for JS, CSS subsetting via stylesheet tags, no external frameworks, JS bundle ≤ 16KB.",
+      "files": [],
+      "expectations": [
+        "States minimum Lighthouse score for Theme Store is 60",
+        "Provides the weighted formula: [(p*31)+(c*33)+(h*13)]/77",
+        "Calculates the current weighted score from the given values",
+        "Mentions that all scripts need defer or async attributes",
+        "Mentions JS bundle must be ≤ 16 KB minified",
+        "Mentions not lazy-loading above-the-fold images (hero/LCP image)",
+        "Mentions using asset_url filter for cache busting (not hardcoded paths)",
+        "Mentions wrapping JS in IIFE for namespace safety",
+        "Mentions CSS subsetting via {% stylesheet %} tags (not global stylesheets)",
+        "Does not recommend external JS frameworks"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I want to create an alternate product template for pre-order products that shows a custom banner. How do I create an alternate template, and how do merchants assign products to use it? Also, I want a 'pre-order-banner' section that only shows on this specific template.",
+      "expected_output": "A templates/product.preorder.json file, plus a sections/pre-order-banner.liquid with enabled_on restricted to the 'product' template. Instructions for merchants to assign the alternate template via Shopify admin Product > Template > select 'pre-order'.",
+      "files": [],
+      "expectations": [
+        "Alternate template file is named product.preorder.json (correct naming convention)",
+        "The JSON template contains valid layout, sections, and order keys",
+        "The section uses enabled_on to restrict to product template (or disabled_on for others)",
+        "enabled_on and disabled_on are NOT both used in the same schema",
+        "The JSON template file contains no HTML or Liquid logic",
+        "Merchant instructions reference using the Theme editor or Product admin to select the template",
+        "The pre-order-banner section has a schema with name and at least one setting",
+        "The section has presets defined if it should appear in Add Section picker",
+        "File placement is correct: templates/ for the JSON template, sections/ for the section"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Create the layout/theme.liquid file structure for a Shopify theme. Include the section groups for header and footer, the correct mandatory Liquid objects, proper body class, and reference the theme CSS and JS files. Make it accessible.",
+      "expected_output": "A complete theme.liquid with: content_for_header in <head>, content_for_layout in <body>, {% sections 'header-group' %} and {% sections 'footer-group' %}, body class identifying the current template (template | handleize or template.name both valid), stylesheet_tag using asset_url, JS with defer, skip to main content link for accessibility.",
+      "files": [],
+      "expectations": [
+        "{{ content_for_header }} appears inside the <head> tag",
+        "{{ content_for_layout }} appears inside the <body> tag",
+        "{% sections 'header-group' %} is present",
+        "{% sections 'footer-group' %} is present",
+        "body element has a class that identifies the current template (using template | handleize, template.name, or equivalent pattern)",
+        "CSS is loaded via asset_url filter and stylesheet_tag",
+        "JavaScript is loaded with defer attribute",
+        "asset_url filter is used for all asset references (no hardcoded paths)",
+        "Skip to main content link is present for accessibility",
+        "main element has id='MainContent' and role='main'"
+      ]
+    }
+  ]
+}

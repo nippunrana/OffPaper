@@ -1,0 +1,189 @@
+{
+  "skill_name": "wp-block-theme",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I've got a static HTML page for our new 'Research Hub' landing page — it has a hero section, a 3-column features grid, an FAQ accordion, and a footer CTA. The HTML, CSS, and JS are all in one file. I need this inside WordPress so editors can assign it to a page and it shows up in the Site Editor. The theme is my-theme (kebab-case slug, text domain my-theme). Here's the file:\n\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"UTF-8\"><title>Research Hub</title>\n<style>\n  *{margin:0;padding:0;box-sizing:border-box}\n  body{font-family:'Inter',sans-serif;background:#0a0a1a;color:#fff}\n  .hero{padding:120px 40px;text-align:center;background:linear-gradient(135deg,#1a1a2e,#16213e)}\n  .hero h1{font-size:3.5rem;margin-bottom:1rem}\n  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;padding:80px 40px}\n  .card{background:rgba(255,255,255,0.05);border-radius:12px;padding:2rem}\n  .faq{padding:80px 40px}\n  .faq details{border-bottom:1px solid rgba(255,255,255,0.1);padding:1rem 0}\n  .cta{padding:120px 40px;text-align:center;background:#e94560}\n</style></head>\n<body>\n  <section class=\"hero\"><h1>Research Hub</h1><p>Science-backed protocols.</p></section>\n  <section class=\"features\">\n    <div class=\"card\"><h3>Purity</h3><p>99%+ certified.</p></div>\n    <div class=\"card\"><h3>Speed</h3><p>Next-day delivery.</p></div>\n    <div class=\"card\"><h3>Support</h3><p>Expert guidance.</p></div>\n  </section>\n  <section class=\"faq\">\n    <details><summary>What is the purity?</summary><p>99%+ certified.</p></details>\n    <details><summary>How long does delivery take?</summary><p>1-2 working days in the UK.</p></details>\n  </section>\n  <section class=\"cta\"><h2>Ready to start?</h2><a href=\"/shop\">Shop Now</a></section>\n  <script>\n    document.querySelectorAll('.card').forEach(c=>{c.addEventListener('mouseenter',()=>c.style.transform='translateY(-4px)');c.addEventListener('mouseleave',()=>c.style.transform='')});\n  </script>\n</body></html>\n```",
+      "expected_output": "A complete set of files written under a theme root: templates/research-hub.html, patterns/research-hub.php (master, Inserter: false), sub-pattern PHP files for each section, scoped CSS files under patterns/{section}/style.css, JS files only where genuinely needed, a theme.json customTemplates entry, and functions.php additions that call register_block_style() to bind pattern CSS to its outermost wrapper block. theme.json uses `\"version\": 3` and the pinned WP 7.0 schema URL (https://schemas.wp.org/wp/7.0/theme.json). No fabricated APIs (no register_block_ability, no is_ai_ready, no wp_register_icons, no WP_Icons_Registry, no __experimentalRole).",
+      "files": [],
+      "assertions": [
+        "templates/research-hub.html exists and calls a master pattern via wp:pattern",
+        "patterns/research-hub.php exists with Inserter: false in its header comment",
+        "Each visual section has its own sub-pattern file in patterns/",
+        "Every CSS rule in patterns/*/style.css is scoped to .is-style-{pattern-slug} (no global selectors)",
+        "theme.json gets a customTemplates entry with name: research-hub",
+        "functions.php uses register_block_style() to bind pattern CSS to a core block variation",
+        "theme.json declares \"version\": 3 and \"$schema\": \"https://schemas.wp.org/wp/7.0/theme.json\"",
+        "No file references the fabricated APIs register_block_ability, is_ai_ready, WP_Icons_Registry, or __experimentalRole",
+        "Any non-block HTML that cannot be mapped to a Core Block is rendered by a dynamic block registered via register_block_type() with a render_callback (not by a wp:html wrapper)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need to add a new header variant — a slim top bar that shows a regulatory warning message and a phone number on the right. The warning icon should appear in the inserter alongside core icons. It should be editable in the Site Editor and swappable like the other header parts. Theme is my-theme; existing header parts are in parts/ and already registered in theme.json.",
+      "expected_output": "Two files: parts/header-top-bar-variant-b.html (thin pointer to a pattern) and patterns/header-top-bar-variant-b.php (real content with PHP). The pattern must NOT have Inserter: false. theme.json templateParts array gets a new entry with area: header. functions.php uses register_block_style() to bind the CSS to the template part's wrapper block variation. Icon is rendered either via the new core/icon block (WP 7.0) or, if the developer prefers maximum compatibility, via a documented PHP helper.",
+      "files": [],
+      "assertions": [
+        "Both a .html template part and a .php pattern file are created",
+        "The PHP pattern does NOT contain 'Inserter: false'",
+        "PHP code (get_stylesheet_directory_uri, icon helper, or core/icon block call) appears in the .php file, not the .html file",
+        "functions.php uses register_block_style() to tie the template part CSS to its root block",
+        "theme.json templateParts array includes the new variant with area: header",
+        "No file references the fabricated WP_Icons_Registry::get_instance()->register() signature"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My hero section looks fine on the frontend but the Site Editor is showing the old version even though I updated the template file. Also, the CSS I added for the hero isn't showing up inside the editor — it only loads on the actual page. How do I fix both of these?",
+      "expected_output": "Two clear fixes: (1) Site Editor stores customisations in the database; tell the user to go to Appearance → Editor, find the template, click the ⋮ menu, select 'Clear Customizations' / 'Reset to defaults' to remove the database override. (2) The CSS must be loaded via register_block_style() targeting the component's wrapper block — WordPress then injects it into both the frontend and the editor iframe automatically. Include a concrete register_block_style() example.",
+      "files": [],
+      "assertions": [
+        "Response explains that the Site Editor stores customisations in the database and those take precedence over file changes",
+        "Response gives the specific steps: Appearance → Editor → ⋮ → Reset to defaults / Clear Customizations",
+        "Response explains that register_block_style() handles CSS injection inside the editor iframe automatically",
+        "Response includes a concrete register_block_style() call tied to a core block variation"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "We want to add an AI-powered 'Tone Shift' button to the editorial sidebar for our blog posts. When an editor selects some text and clicks it, the prompt should rewrite the selection in a chosen tone — scientific, casual, or formal. We're on WordPress 7.0 with the WP AI Client enabled (OpenAI connector configured at Settings → Connectors). Theme slug is my-theme. Register this as an Ability on the theme so it surfaces in the AI Sidekick.",
+      "expected_output": "A functions.php snippet (or theme include) that registers a 'my-theme/editorial' ability category (on the `wp_abilities_api_categories_init` hook) and a 'my-theme/tone-shift' ability (on the `wp_abilities_api_init` hook). The ability declares input_schema with `text` and `tone` (enum scientific/casual/formal), output_schema with `rewritten`, a permission_callback gating to `edit_posts`, and an execute_callback that calls WP_AI_Client_Prompt_Builder.generate_text().",
+      "files": [],
+      "assertions": [
+        "Code registers an ability category via wp_register_ability_category() before the ability itself",
+        "Code registers the ability via wp_register_ability() (not register_block_ability)",
+        "The ability category is registered on `wp_abilities_api_categories_init`; the ability itself is registered on `wp_abilities_api_init` — two separate hooks",
+        "The ability declares input_schema and output_schema in JSON Schema form",
+        "The ability declares a permission_callback that gates execution",
+        "The execute_callback uses WP_AI_Client_Prompt_Builder (the WP 7.0 AI Client) and handles WP_Error returns from generate_text()",
+        "No fabricated APIs are referenced (no register_block_ability, no `intent` field, no `is_ai_ready`)"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "We currently have a handrolled breadcrumb sub-pattern at patterns/breadcrumbs.php that builds the trail with custom PHP. I want to replace it with WordPress 7.0's new core/breadcrumbs block. We also want to drop one redundant ancestor from the trail when the current page is under the 'Knowledge Base' parent — its slug doesn't add useful information for users. Theme slug is my-theme.",
+      "expected_output": "Delete the old breadcrumbs sub-pattern. Replace any references to it in templates / patterns with `<!-- wp:breadcrumbs /-->`. Add a `block_core_breadcrumbs_items` filter in functions.php (or a theme include) that removes the 'Knowledge Base' segment from the trail when the current page descends from it.",
+      "assertions": [
+        "Response instructs the user to delete the old patterns/breadcrumbs.php (or shows the removal)",
+        "Response uses `<!-- wp:breadcrumbs /-->` in markup, not a custom pattern reference",
+        "Response uses `add_filter( 'block_core_breadcrumbs_items', … )` to customise the trail",
+        "The filter callback receives the items array and returns a modified array (does not invent a different filter name)",
+        "No file references the fabricated APIs (no register_block_ability, no WP_Icons_Registry, no __experimentalRole)"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "We use the WordPress 7.0 AI Client for an auto-tagging feature on posts. Two things I need in PHP: (1) only enable/show the feature if the environment actually supports AI, and (2) once we cross a daily token budget I want to hard-stop any further AI prompts site-wide so we don't keep getting billed by the provider. We're on WordPress 7.0, theme slug my-theme.",
+      "expected_output": "PHP that gates the feature on wp_supports_ai() and registers a wp_ai_client_prevent_prompt filter returning true once a stored daily-budget flag is set, so further wp_ai_client_prompt() calls return WP_Error. Generation code checks is_wp_error().",
+      "assertions": [
+        "Uses wp_supports_ai() to gate whether the AI feature is enabled/shown",
+        "Registers the wp_ai_client_prevent_prompt filter and returns true to block prompts when the budget is exceeded",
+        "Does not invent a non-existent stop/budget function (e.g. no wp_ai_client_stop(), no disable_ai())",
+        "Generation code handles the WP_Error returned when a prompt is prevented or fails"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I have a plugin that runs a background job to rewrite post meta whenever a post is saved. On WordPress 7.0 with real-time collaboration turned on, I'm worried this background write stomps on other editors' changes while several people are in the editor together. How do I detect that a collaboration session is active and skip my background write in that case? Plugin text domain my-plugin.",
+      "expected_output": "Code that checks wp_is_collaboration_enabled() (and/or wp_is_collaboration_allowed()) and short-circuits the background meta write when collaboration is active. Does not use private/internal sync APIs.",
+      "assertions": [
+        "Uses wp_is_collaboration_enabled() (or wp_is_collaboration_allowed()) to detect active collaboration",
+        "Skips or guards the background post-meta write when collaboration is active",
+        "Does not call the private wp_collaboration_inject_setting() or the non-existent can_user_sync_entity_type()",
+        "Does not reach into internal classes like WP_Sync_Post_Meta_Storage or WP_HTTP_Polling_Sync_Server"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Our security review wants us to move WordPress password hashing from bcrypt to Argon2id. We control wp-config.php and a small mu-plugin. How do we do this safely on WordPress 7.0 without locking anyone out if a particular server build doesn't actually support Argon2? Give me the code.",
+      "expected_output": "A mu-plugin using the wp_hash_password_algorithm filter to return PASSWORD_ARGON2ID, guarded by a defined('PASSWORD_ARGON2ID') availability check that falls back to the default otherwise. Optionally wp_hash_password_options to tune cost.",
+      "assertions": [
+        "Uses the wp_hash_password_algorithm filter (not a fabricated function like wp_set_password_algorithm())",
+        "Guards Argon2 behind an availability check such as defined('PASSWORD_ARGON2ID') with a safe fallback",
+        "Mentions or uses wp_hash_password_options for tuning Argon2 cost parameters",
+        "Does not claim WordPress lets you swap the algorithm via a setting in wp-admin"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "I'm building a WP 7.0 block theme with slug 'nova-theme'. Write the full functions.php (not a snippet — the real file) that registers pattern categories and block styles for three sub-patterns: hero-section, faq-section, and cta-section. Each sub-pattern has its own style.css. Follow WordPress PHP coding standards exactly — I care about tabs vs spaces, array syntax, string quote style, and naming.",
+      "expected_output": "A complete functions.php file with: tabs for indentation (not 4-space), array() long syntax (not []), single-quoted string literals where no interpolation is needed, snake_case function names, proper spacing inside control structure parens, declare(strict_types=1) on line 2, and no closing ?>. All three sub-patterns are registered via register_block_style() using array() for the arguments.",
+      "files": [],
+      "assertions": [
+        "functions.php uses tab characters (\\t) for indentation inside function bodies — not 4 spaces",
+        "All PHP array literals use array() syntax — no short [] literals present in the file",
+        "String literals that require no variable interpolation use single quotes",
+        "Function names follow snake_case (e.g. nova_theme_register_pattern_categories not camelCase)",
+        "declare(strict_types=1); appears on line 2 of functions.php",
+        "The file does not end with a closing ?> tag",
+        "register_block_style() is called for all three sub-patterns (hero-section, faq-section, cta-section)"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "I need a render_callback for a dynamic block in my 'nova-theme' WP 7.0 theme. The block takes a user_id attribute (integer) and a status attribute (string). The callback should: (1) check if the user_id attribute is zero and return early, (2) fetch a row from a custom table called nova_cache using $wpdb->prepare() with the user_id and status as placeholders, (3) return HTML if a row is found, empty string if not. Follow WordPress PHP coding standards.",
+      "expected_output": "A render_callback function with: Yoda conditions (0 === $user_id, not $user_id === 0), $wpdb->prepare() with %d and %s placeholders (not manual quoting or sprintf), array() for all array literals, tabs for indentation, typed parameters and return type, single quotes for string literals, and the early-return check using Yoda style.",
+      "files": [],
+      "assertions": [
+        "Early-return condition uses Yoda style: 0 === $user_id (not $user_id === 0 or $user_id == 0)",
+        "$wpdb->prepare() is used with %d and %s placeholders — no string interpolation or manual quoting in the SQL",
+        "All array literals in PHP use array() syntax — no short [] present",
+        "Tab characters are used for indentation — not spaces",
+        "The function has typed parameters and a return type declaration",
+        "String literals use single quotes where no interpolation is needed"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "In my 'nova-theme' WP 7.0 theme I want a PHP class called Nova_Theme_Asset_Registry that manages which block style handles are registered. It should have: a private static property $instance (nullable self), a public static getInstance() method, a private array $registered property initialized to empty, and a public register(string $handle, string $src) method that adds to $registered. Put it in the right file. Follow WordPress PHP coding standards for class naming, file naming, and visibility.",
+      "expected_output": "A file named class-nova-theme-asset-registry.php containing exactly one class. The class uses Capitalized_Snake_Case naming (Nova_Theme_Asset_Registry). All properties and methods have explicit visibility. The $registered property is initialized with array() not []. The getInstance() method is public static. The file has declare(strict_types=1) and no closing ?>.",
+      "files": [],
+      "assertions": [
+        "File is named class-nova-theme-asset-registry.php (underscores in class name replaced with hyphens, prefixed with class-)",
+        "The class is named Nova_Theme_Asset_Registry — Capitalized_Snake_Case",
+        "All properties and methods have explicit visibility keywords (public/private/protected — no var keyword)",
+        "$registered is initialized with array() not []",
+        "The file contains exactly one class definition",
+        "declare(strict_types=1); is present and no closing ?> at the end of the file"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "On WordPress 7.0 I want my AI summarizer to be able to call my plugin's own functions as tools. I read that you pass them to the prompt builder with ->using_abilities(). Can you wire up wp_ai_client_prompt() with using_abilities() to expose my 'fetch_order_status' function to the model?",
+      "expected_output": "The response should correct the premise: there is no using_abilities() method on the WP 7.0 AI Client prompt builder. The right mechanism is the Abilities API — register fetch_order_status via wp_register_ability() (on wp_abilities_api_init, with category, schemas, permission_callback, execute_callback). It should NOT produce code that calls ->using_abilities() as if it were real.",
+      "assertions": [
+        "Does not write code that calls ->using_abilities() on the prompt builder as a real method",
+        "Explicitly states that using_abilities() is not part of the WP 7.0 AI Client prompt builder",
+        "Directs the user to the Abilities API (wp_register_ability) as the correct way to expose functions to AI",
+        "Shows registration on the wp_abilities_api_init hook with a category, schemas, and permission_callback"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "I'm building a WP 7.0 block theme with slug 'nova-theme'. Create a standalone CTA sub-pattern called 'cta-section'. It should have a headline, a short paragraph, and a button. Give me the PHP pattern file and the scoped style.css for it. The button should have padding, a border-radius, a background colour (#e94560), white text, and a hover transition. Do not add any template or theme.json changes — just the pattern file and the CSS file.",
+      "expected_output": "A PHP pattern file (patterns/cta-section.php) with correct block markup, and a patterns/cta-section/style.css with: tabs for indentation, logical property ordering (Display → Box model → Colors → Other for the button rule), no magic numbers, rgba() without paren padding if used, unitless zero values, and the variation class .is-style-cta-section scoping all rules.",
+      "files": [],
+      "assertions": [
+        "style.css uses tabs (\\t) for indentation — not spaces",
+        "The button CSS rule orders Display before Box model before Colors before Other (transition last)",
+        "Hex colours are lowercase (#e94560, #fff — not #E94560 or #FFFFFF)",
+        "Zero values have no units (e.g. margin: 0 not margin: 0px) unless for transition-duration",
+        "All rules are scoped to .is-style-cta-section (no global selectors)",
+        "Pattern PHP file has correct header with Slug: nova-theme/cta-section"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "I'm building a WP 7.0 block theme with slug 'nova-theme'. I need a hero sub-pattern called 'hero-section' that uses a PHP render_callback to output an <img> tag for a decorative icon (alt text 'Decorative Icon') and a disabled submit button in the markup. Give me just the PHP pattern file and the style.css. I care specifically that HTML attributes follow WordPress standards.",
+      "expected_output": "PHP pattern with: all HTML attributes double-quoted; the disabled attribute written as just 'disabled' (bare, no value, no =true or =false); the <img /> self-closing tag has exactly one space before the /; style.css uses tabs and logical property ordering.",
+      "files": [],
+      "assertions": [
+        "All HTML attributes in the PHP output are double-quoted (e.g. alt=\"Decorative Icon\" not alt='Decorative Icon' or alt=Decorative)",
+        "The disabled attribute is written as just 'disabled' with no value (not disabled=\"true\", not disabled=\"false\", not disabled=\"disabled\")",
+        "The <img> self-closing tag has exactly one space before the slash: <img ... />",
+        "style.css uses tabs for indentation — not spaces",
+        "style.css orders Box model properties before Colors & Typography properties"
+      ]
+    }
+  ]
+}

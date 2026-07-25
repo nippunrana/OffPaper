@@ -1,0 +1,163 @@
+{
+  "skill_name": "retrieval-and-ranking",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to add semantic search to my Python script. I have a list of 500 product descriptions and I need to find the most relevant ones for a user's query. No OpenAI API — it needs to run on CPU. Show me how to do it.",
+      "expected_output": "Code using SentenceTransformer('all-MiniLM-L6-v2'), model.encode() with normalize_embeddings=True, and util.semantic_search(). Must NOT use openai, cohere, or any cloud embedding API. Should encode corpus once and reuse embeddings. Top-k results returned as a list with document text and score.",
+      "files": [],
+      "expectations": [
+        "Uses sentence-transformers library (not openai/cohere/any paid API)",
+        "Imports SentenceTransformer and util from sentence_transformers",
+        "Uses model.encode() (not model.rank() — that is a CrossEncoder method)",
+        "Passes normalize_embeddings=True to model.encode()",
+        "Uses util.semantic_search() to retrieve top-k results",
+        "Does NOT separately compute cosine similarity after encoding without normalization",
+        "Mentions that model downloads from HuggingFace once then runs offline",
+        "Returns or prints the matched documents with their scores",
+        "Encodes corpus once (not re-encodes on every query)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "My search script uses BM25 but I'm getting really bad recall — relevant documents aren't being found. The code builds the index from lowercase text but the queries go in as-is (mixed case). How do I diagnose and fix this?",
+      "expected_output": "Identifies the root cause: asymmetric tokenization (corpus lowercased, query not). Fix: apply the exact same tokenization pipeline to both corpus at index time and query at search time. Shows corrected code where tokenize() function is used for both.",
+      "files": [],
+      "expectations": [
+        "Correctly identifies asymmetric tokenization as the root cause",
+        "Explains that BM25 is a term-matching algorithm requiring identical preprocessing",
+        "Shows a tokenize() function applied to BOTH corpus items and queries",
+        "The fix applies the same lowercase transformation to the query",
+        "Does not introduce different stop-word lists for corpus vs query",
+        "Shows use of get_scores() or get_top_n() with the fixed tokenized_query",
+        "Mentions that recall is expected to improve after fix",
+        "Does NOT suggest switching to semantic search as the primary fix (that is a different tool)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have a retrieval system and I want to measure its quality. For each query I have a list of ground-truth relevant documents (binary: 0 or 1). I want NDCG@10 and MAP. How do I compute these locally without any external service?",
+      "expected_output": "Code using scripts/metrics.py (or the equivalent inline implementation). Shows building a relevances list (ground-truth labels in retrieval order), calling ndcg_at_k(relevances, k=10) and mean_average_precision(list_of_relevances). Explains the MAP vs sklearn.average_precision_score difference.",
+      "files": [],
+      "expectations": [
+        "Provides a working NDCG@k implementation or points to scripts/metrics.py",
+        "Explains that relevances list = ground-truth grades in retrieval order (index 0 = rank 1)",
+        "Calls ndcg_at_k with k=10",
+        "Provides or calls mean_average_precision across multiple queries",
+        "Does NOT use sklearn.average_precision_score and claim it equals MAP (different formula)",
+        "Either notes or warns about the MAP vs sklearn.average_precision_score distinction",
+        "Implementation uses numpy (no sklearn required for the metrics themselves)",
+        "For binary labels, mentions that gains='exponential' and gains='linear' give same ranking order"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I want to combine BM25 and semantic search for better retrieval. My corpus has 2,000 technical support articles. Show me the full hybrid search implementation that fuses results from both.",
+      "expected_output": "Full implementation with: (1) BM25Okapi indexing the corpus with consistent tokenization, (2) SentenceTransformer embedding the corpus, (3) a reciprocal_rank_fusion function using k=60 as the standard constant, (4) a hybrid_search function that runs both retrievers and fuses their ranked doc-ID lists.",
+      "files": [],
+      "expectations": [
+        "Implements BM25Okapi retrieval using rank_bm25",
+        "Implements semantic retrieval using SentenceTransformer and util.semantic_search",
+        "Implements Reciprocal Rank Fusion with k=60 (standard constant)",
+        "RRF function accepts ranked lists of doc IDs (not scores)",
+        "RRF score = sum of 1/(k + rank) across retrievers",
+        "Corpus is encoded once and embeddings reused across queries",
+        "BM25 tokenization is consistent between corpus indexing and query search",
+        "Final output returns doc IDs (or doc text) sorted by fused RRF score",
+        "Does NOT use a paid API for embeddings"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Should I use BM25 or semantic search for my use case? I'm building a search over a dataset of error log messages. Users search by typing the exact error code or message text (e.g., 'ERROR_CODE_4021 connection refused').",
+      "expected_output": "Recommendation of BM25 for this use case with clear rationale: exact-match term retrieval is BM25's strength; error codes and technical identifiers are not well-represented in semantic embedding spaces trained on general text. Hybrid may help but BM25 alone is a strong starting point.",
+      "files": [],
+      "expectations": [
+        "Recommends BM25 as the primary retriever for exact-match error codes",
+        "Explains WHY: BM25 excels at exact term matching; error codes are out-of-vocabulary for most embedding models",
+        "Does NOT recommend semantic search alone for this case",
+        "Mentions hybrid search (BM25 + semantic) as an option to handle paraphrastic queries alongside exact codes",
+        "Gives a concrete example of why semantic search would struggle (e.g., 'ERROR_CODE_4021' has no semantic neighbor in embedding space)",
+        "Suggests starting with BM25 and adding semantic search only if recall is insufficient"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I built a retrieval pipeline and ran it against 50 test queries. I have the ground-truth relevant doc IDs for each query. Now I want to add evaluation code that computes NDCG@5, P@5, and Recall@5 for each query and prints a summary. Relevance is graded: 0, 1, 2, or 3.",
+      "expected_output": "Code that builds per-query relevance lists (grades in retrieval order), calls ndcg_at_k, precision_at_k, and recall_at_k for each query, then computes and prints averages. Uses scripts/metrics.py or equivalent pure-numpy implementation. Chooses gains='exponential' for NDCG (correct for graded relevance).",
+      "files": [],
+      "expectations": [
+        "Builds relevance list as ground-truth grades in the retrieval-output order",
+        "Calls ndcg_at_k(relevances, k=5) — using graded relevance correctly",
+        "Calls precision_at_k(relevances, k=5)",
+        "Calls recall_at_k(relevances, k=5, num_relevant=...) with the correct total-relevant count",
+        "Uses gains='exponential' or default (not 'linear') since labels are graded 0-3",
+        "Computes per-query metrics and aggregates (averages) across all 50 queries",
+        "Prints a summary with mean NDCG@5, mean P@5, mean Recall@5",
+        "Does NOT use sklearn.ndcg_score with wrong array shapes (requires 2D inputs)",
+        "Implementation is pure numpy or uses scripts/metrics.py (no sklearn dependency at runtime)"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I need to add semantic search to a script that will run on a server without a GPU. The server has limited RAM (2 GB available for the process). What's the most CPU-efficient approach? The corpus has ~10,000 short sentences.",
+      "expected_output": "Recommends all-MiniLM-L6-v2 as the default CPU choice (~22 MB model). Mentions static embeddings (model2vec/potion-base-8M) as a faster alternative when latency is critical. Recommends persisting corpus embeddings to disk (numpy save/load) to avoid re-encoding. Notes that 10k×384-dim float32 corpus embeddings = ~15 MB RAM.",
+      "files": [],
+      "expectations": [
+        "Recommends all-MiniLM-L6-v2 for the CPU use case",
+        "Mentions model size (~22 MB) so the user knows RAM impact",
+        "Notes that corpus embeddings for 10k docs at 384-dim ≈ 15 MB float32 — fits in 2GB RAM",
+        "Recommends caching/persisting embeddings to disk (np.save / np.load) to avoid re-encoding",
+        "Mentions static embeddings (model2vec) as a speed alternative when encoding latency is a bottleneck",
+        "Does NOT recommend GPU-only solutions or cloud APIs",
+        "Shows or mentions normalize_embeddings=True for correct cosine similarity"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "What metric should I use to evaluate my retrieval system? My system returns a ranked list of 10 results per query. I have binary relevance labels (a document is either relevant or not). I care most about whether the top results are relevant.",
+      "expected_output": "Recommends MAP and/or P@k as primary metrics for binary relevance. Explains that NDCG is designed for graded relevance but works for binary (equivalent to MAP in ranking order). Recommends P@3 or P@5 since user cares about top results. Notes that MRR is appropriate if only the single best result matters.",
+      "files": [],
+      "expectations": [
+        "Recommends MAP or P@k for binary relevance use case",
+        "Explains that P@k directly measures top-result quality (aligns with stated concern)",
+        "Mentions MRR as appropriate if finding one correct result at the top is the only goal",
+        "If recommending NDCG, explains that for binary labels gains='linear' and 'exponential' produce equivalent rankings",
+        "Does NOT recommend NDCG@k alone without noting the binary-vs-graded relevance distinction",
+        "Gives a concrete recommendation (e.g., 'use P@5 and MAP') rather than listing all metrics without guidance",
+        "Does NOT confuse sklearn.average_precision_score (PR-curve AP) with ranking MAP"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "I have 2 million product descriptions stored as precomputed embeddings in a .npy file. I want to run semantic search against them from Python on a CPU server with 8 GB RAM. The embedding matrix itself is about 3 GB. How do I score queries against all 2M docs without running out of memory?",
+      "expected_output": "Uses np.load with mmap_mode='r' to avoid loading 3 GB into RAM at once. Scores queries against the corpus using chunked matmul (queries @ chunk.T for each corpus chunk) with a running top-k, never materializing the full (N_queries, M_docs) score matrix. Alternatively uses util.semantic_search with corpus_chunk_size parameter. Does NOT suggest loading the full embedding matrix with np.load() (no mmap), does NOT suggest a Python per-pair loop.",
+      "files": [],
+      "expectations": [
+        "Uses np.load(path, mmap_mode='r') to load the embedding matrix without reading all 3 GB into RAM",
+        "Scores queries against the corpus in chunks (never materializes the full N×M score matrix)",
+        "The scoring primitive is a matmul (queries @ chunk.T or equivalent), NOT a Python element-wise loop",
+        "Maintains a running top-k across chunks rather than sorting all 2M scores at once",
+        "OR uses util.semantic_search with corpus_chunk_size parameter as the alternative approach",
+        "Does NOT recommend np.load() without mmap_mode when the file exceeds available RAM",
+        "Does NOT suggest a per-document Python loop for scoring",
+        "Does NOT suggest the (N, M, D) element-wise broadcast pattern"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "I'm building BM25 search over 5 million documents stored in a Parquet file. Loading the whole file with pandas read_parquet is slow and uses too much RAM. I also need to tokenize each document (lowercase, remove punctuation, split on spaces). How should I handle this efficiently?",
+      "expected_output": "Uses Polars pl.scan_parquet (lazy evaluation) with .collect(engine='streaming') to process the file without loading it all into RAM. Tokenizes with Polars vectorized .str expressions (.str.to_lowercase().str.replace_all(...).str.split(' ')) instead of per-row .map_elements() or .apply(). The same tokenizer function is applied to queries for symmetric BM25 tokenization.",
+      "files": [],
+      "expectations": [
+        "Uses pl.scan_parquet (lazy scan, not pl.read_parquet which loads everything)",
+        "Calls .collect(engine='streaming') to process in chunks without full RAM load",
+        "Tokenizes using vectorized .str chain: .str.to_lowercase(), .str.replace_all(...), .str.split(' ')",
+        "Does NOT use .map_elements(lambda ...) or .apply() for tokenization (triggers PolarsInefficientMapWarning and is slow)",
+        "Does NOT use pandas read_parquet for the large-file case",
+        "Applies the same tokenization to queries (symmetric tokenization — Gate 1)",
+        "Feeds the resulting List[List[str]] directly to BM25Okapi"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "skill_name": "gsap-animation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm building a vanilla JS landing page and want a hero section where the headline, subheadline, and CTA button fade+slide up into view on page load, staggered one after another, with a nice overshoot/bounce feel on the CTA button. What library should I use and can you write the animation code?",
+      "expected_output": "Recommends GSAP (no library was specified). Uses gsap.from() or gsap.to() with autoAlpha and y for the fade+slide, camelCase properties, a stagger between the three elements, and a back.out() or similar overshoot ease specifically on the CTA button (not a generic ease for everything).",
+      "files": [],
+      "expectations": [
+        "Recommends GSAP explicitly as the animation library, since none was specified in the prompt",
+        "Uses autoAlpha (not raw opacity alone) for the fade-in",
+        "Uses the y transform alias (not top/margin-top) for the slide-up movement",
+        "Uses camelCase property names throughout (e.g. backgroundColor, not background-color)",
+        "Uses a stagger value/object to offset the headline, subheadline, and CTA button in sequence",
+        "Uses an overshoot-style ease (e.g. back.out(...) or elastic.out(...)) specifically on the CTA button, distinct from the ease used on the headline/subheadline",
+        "The GSAP API calls shown (gsap.to/from/fromTo, property names, ease syntax) are syntactically valid per the documented API"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I want a full-viewport section on my site that pins in place while the user scrolls, and during that pin, three cards slide in from the left one after another in sync with the scroll (scrubbed, not just triggered once). Can you show me how to build this with GSAP, including registering ScrollTrigger?",
+      "expected_output": "Registers ScrollTrigger via gsap.registerPlugin(ScrollTrigger). Builds a gsap.timeline() with a scrollTrigger config on the timeline itself (not on individual child tweens), using pin: true and scrub (true or a number). The three card animations are sequenced within that single timeline using the position parameter, not three separate ScrollTriggers.",
+      "files": [],
+      "expectations": [
+        "Calls gsap.registerPlugin(ScrollTrigger) before any ScrollTrigger usage",
+        "The scrollTrigger config includes pin: true",
+        "The scrollTrigger config includes scrub set to true or a number",
+        "The scrollTrigger config is attached to a gsap.timeline() (or a single top-level tween), not to each of the three card tweens individually",
+        "The three card animations are sequenced within one timeline (via chaining and/or the position parameter), not via three separate ScrollTrigger instances",
+        "start and end values are specified for the ScrollTrigger",
+        "Does not nest a scrollTrigger config inside a child tween that is part of a timeline"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have a React (Next.js) component with a card grid. On mount I want each card to fade and rise into view with a small stagger, and everything needs to clean up properly when the component unmounts or navigates away. Also some of our users have prefers-reduced-motion on, so please handle that too.",
+      "expected_output": "Uses the useGSAP() hook from @gsap/react (not a raw useEffect) with a scope tied to a container ref so selectors don't leak outside the component. Animation uses autoAlpha + y with stagger. Reduced motion is handled via gsap.matchMedia() with a prefers-reduced-motion query (or an equivalent explicit check) rather than being ignored. No GSAP code runs during SSR.",
+      "files": [],
+      "expectations": [
+        "Imports and uses the useGSAP() hook from @gsap/react as the primary mechanism (not a raw useEffect for the main animation setup)",
+        "Passes a scope (container ref) into useGSAP so selectors are scoped to the component, not the whole document",
+        "Uses stagger to offset the card animations",
+        "Uses autoAlpha (or opacity + visibility handling) for the fade, plus y for the rise",
+        "Handles prefers-reduced-motion explicitly, e.g. via gsap.matchMedia() with a '(prefers-reduced-motion: reduce)' query, rather than ignoring it",
+        "Does not call gsap or ScrollTrigger APIs during server-side rendering (animation setup is confined to the client-side hook)",
+        "Cleanup on unmount is handled automatically by useGSAP, or an explicit ctx.revert()/kill() is shown if a useEffect fallback is used"
+      ]
+    }
+  ]
+}
