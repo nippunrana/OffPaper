@@ -43,7 +43,7 @@ Implemented in `src/ai/document_upload/DocumentPipeline.php` + `DocumentSchemas.
 ## Document AI Chat
 - `public/api/chat.php` — per-document Q&A. Loads the `user_uploads` row (auth + ownership checked), builds a system prompt (bullet-point, bolded-highlights style) plus a context block of the doc's summary/categories/`extracted_json`, re-attaches the original image file, and calls Gemini (`gemini-3.5-flash-lite`) fresh on every message.
 - Frontend: `views/chat_modal.php` + `public/assets/js/doc-chat.js`. The chat API endpoint URL is overridable via `window.OFFPAPER_CHAT_URL` (defaults to `api/chat.php`).
-- **Note:** the `user_uploads_knowledgebase` table (chat history / running summary) exists in the schema and is referenced by a `LEFT JOIN` in `add_to_calendar.php`, but nothing currently writes to it — chat.php is stateless per request and doesn't persist conversation history yet.
+- **Note:** `chat.php` persists conversation history for **all document types** in `user_uploads_knowledgebase`. History is loaded on modal open and sent as context on subsequent messages. A `mode=clear_history` POST wipes history to support the "New Chat" button in the frontend.
 
 ## Document Deletion
 - `public/api/delete_document.php` — CSRF-protected, ownership-checked. Deletes the associated Google Calendar event (if any), removes the file from `user-uploads/` on disk, then deletes the `user_uploads` row (cascades to `user_uploads_knowledgebase` via FK).

@@ -88,6 +88,35 @@ $uuid = trim((string)($input['uuid'] ?? ''));
 $mode = trim((string)($input['mode'] ?? ''));
 $userId = (int)$_SESSION['user_id'];
 
+// Handle clear_history mode — wipe chat history for this document
+if ($mode === 'clear_history') {
+    if ($docId <= 0 && empty($uuid)) {
+        echo json_encode(['ok' => false, 'error' => 'Valid document identifier is required.']);
+        exit;
+    }
+    try {
+        $db = db();
+        if ($docId > 0) {
+            $stmt = $db->prepare('SELECT id FROM user_uploads WHERE id = :id AND user_id = :user_id');
+            $stmt->execute(['id' => $docId, 'user_id' => $userId]);
+        } else {
+            $stmt = $db->prepare('SELECT id FROM user_uploads WHERE uuid = :uuid AND user_id = :user_id');
+            $stmt->execute(['uuid' => $uuid, 'user_id' => $userId]);
+        }
+        $doc = $stmt->fetch();
+        if (!$doc) {
+            echo json_encode(['ok' => false, 'error' => 'Document not found or access denied.']);
+            exit;
+        }
+        $db->prepare('DELETE FROM user_uploads_knowledgebase WHERE user_upload_id = :upload_id AND user_id = :user_id')
+           ->execute(['upload_id' => (int)$doc['id'], 'user_id' => $userId]);
+        echo json_encode(['ok' => true]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'error' => 'Error clearing chat history: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 if (empty($message)) {
     echo json_encode([
         'ok' => false,
@@ -193,8 +222,9 @@ EOT;
         $docContextPrompt .= json_encode($extracted, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n\n";
     }
 
-    if ($isPlanAssist && !empty($chatHistory)) {
-        $docContextPrompt .= "PRIOR PLAN CONVERSATION HISTORY:\n";
+    if (!empty($chatHistory)) {
+        $contextLabel = $isPlanAssist ? 'PRIOR PLAN CONVERSATION HISTORY' : 'PRIOR CONVERSATION HISTORY';
+        $docContextPrompt .= $contextLabel . ":\n";
         foreach ($chatHistory as $turn) {
             $role = ($turn['role'] ?? 'user') === 'user' ? 'User' : 'AI Assistant';
             $docContextPrompt .= $role . ": " . ($turn['text'] ?? '') . "\n";
@@ -223,30 +253,28 @@ EOT;
     $result = $gemini->generateContent($docContextPrompt, $options);
     $replyText = $result['raw_text'] ?? 'No response generated.';
 
-    if ($isPlanAssist) {
-        $chatHistory[] = [
-            'role' => 'user',
-            'text' => $message,
-            'ts' => date('c'),
-        ];
-        $chatHistory[] = [
-            'role' => 'ai',
-            'text' => $replyText,
-            'ts' => date('c'),
-        ];
+    $chatHistory[] = [
+        'role' => 'user',
+        'text' => $message,
+        'ts' => date('c'),
+    ];
+    $chatHistory[] = [
+        'role' => 'ai',
+        'text' => $replyText,
+        'ts' => date('c'),
+    ];
 
-        $upsertStmt = $db->prepare('
-            INSERT INTO user_uploads_knowledgebase (user_upload_id, user_id, chat_history, created_at, updated_at)
-            VALUES (:user_upload_id, :user_id, :chat_history::jsonb, NOW(), NOW())
-            ON CONFLICT (user_upload_id)
-            DO UPDATE SET chat_history = EXCLUDED.chat_history, updated_at = NOW()
-        ');
-        $upsertStmt->execute([
-            'user_upload_id' => (int)$doc['id'],
-            'user_id' => $userId,
-            'chat_history' => json_encode($chatHistory, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-        ]);
-    }
+    $upsertStmt = $db->prepare('
+        INSERT INTO user_uploads_knowledgebase (user_upload_id, user_id, chat_history, created_at, updated_at)
+        VALUES (:user_upload_id, :user_id, :chat_history::jsonb, NOW(), NOW())
+        ON CONFLICT (user_upload_id)
+        DO UPDATE SET chat_history = EXCLUDED.chat_history, updated_at = NOW()
+    ');
+    $upsertStmt->execute([
+        'user_upload_id' => (int)$doc['id'],
+        'user_id' => $userId,
+        'chat_history' => json_encode($chatHistory, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+    ]);
 
     echo json_encode([
         'ok' => true,

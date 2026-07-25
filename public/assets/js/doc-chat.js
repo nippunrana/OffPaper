@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentDocument = null;
   let chatMode = null; // null for normal chat, 'plan_assist' for Improve Plan
   let newMessageSentInSession = false;
+  const newChatBtn = document.getElementById('docChatNewChatBtn');
 
   // Listen for open chat triggers on cards or detail modals
   document.addEventListener('click', (e) => {
@@ -129,15 +130,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Render suggested prompts & initial greeting
+    // Render suggested prompts & initial greeting, then load history
     if (chatMode === 'plan_assist') {
       renderPlanAssistPrompts();
       renderPlanAssistGreeting(doc, docTitleText);
-      loadExistingChatHistory(doc);
     } else {
       renderQuickPrompts(doc);
       renderInitialGreeting(doc, docTitleText);
     }
+    loadExistingChatHistory(doc);
+
+    // Show New Chat button only when there's saved history to clear
+    if (newChatBtn) newChatBtn.style.display = 'none';
 
     // Show modal
     chatModal.style.display = 'flex';
@@ -150,6 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       if (chatInput) chatInput.focus();
     }, 150);
+  }
+
+  // New Chat button handler
+  if (newChatBtn) {
+    newChatBtn.addEventListener('click', async () => {
+      if (!currentDocument) return;
+      await clearChatHistory();
+    });
   }
 
   function closeChatModal() {
@@ -195,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function sendUserMessage(text) {
     newMessageSentInSession = true;
+    if (newChatBtn) newChatBtn.style.display = 'inline-flex';
 
     appendMessage({
       sender: 'user',
@@ -265,12 +278,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function clearChatHistory() {
+    if (!currentDocument) return;
+    try {
+      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const res = await fetch(chatApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          document_id: currentDocument.id || 0,
+          uuid: currentDocument.uuid || '',
+          mode: 'clear_history'
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        newMessageSentInSession = false;
+        if (chatMessages) chatMessages.innerHTML = '';
+        if (newChatBtn) newChatBtn.style.display = 'none';
+        const docTitleText = formatDocumentTitle(currentDocument);
+        if (chatMode === 'plan_assist') {
+          renderPlanAssistGreeting(currentDocument, docTitleText);
+        } else {
+          renderInitialGreeting(currentDocument, docTitleText);
+        }
+      }
+    } catch (err) {
+      console.error('Error clearing chat history:', err);
+    }
+  }
+
   async function loadExistingChatHistory(doc) {
     try {
       const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
       const docId = doc.id || 0;
       const uuid = doc.uuid || '';
-      const fetchUrl = `${chatApiUrl}?document_id=${docId}&uuid=${encodeURIComponent(uuid)}&mode=plan_assist`;
+      const fetchUrl = `${chatApiUrl}?document_id=${docId}&uuid=${encodeURIComponent(uuid)}`;
 
       const response = await fetch(fetchUrl, {
         headers: { 'Accept': 'application/json' }
@@ -285,19 +328,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const text = turn.text || '';
           const time = turn.ts ? new Date(turn.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : getCurrentTimeFormatted();
           if (sender === 'ai') {
-            appendMessage({
-              sender: 'ai',
-              html: formatMarkdownResponse(text),
-              time: time
-            });
+            appendMessage({ sender: 'ai', html: formatMarkdownResponse(text), time: time });
           } else {
-            appendMessage({
-              sender: 'user',
-              text: text,
-              time: time
-            });
+            appendMessage({ sender: 'user', text: text, time: time });
           }
         });
+        // Show 'New Chat' button since history exists
+        if (newChatBtn) newChatBtn.style.display = 'inline-flex';
       }
     } catch (err) {
       console.error('Error loading existing chat history:', err);

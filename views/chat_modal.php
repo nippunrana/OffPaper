@@ -25,7 +25,13 @@
           </div>
         </div>
       </div>
-      <button type="button" class="doc-chat-modal__close" data-close-doc-chat aria-label="Close AI Chat">&times;</button>
+      <div class="doc-chat-modal__header-actions">
+        <button type="button" id="docChatNewChatBtn" class="doc-chat-modal__new-chat-btn" aria-label="Start new chat" style="display: none;" title="Start a new chat (clears history)">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          New Chat
+        </button>
+        <button type="button" class="doc-chat-modal__close" data-close-doc-chat aria-label="Close AI Chat">&times;</button>
+      </div>
     </header>
 
     <!-- Body / Chat Log -->
