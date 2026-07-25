@@ -1,33 +1,29 @@
 # OffPaper — Project Context
 
 ## What this is
-OffPaper is a web app: the user photographs a paper document (bill, prescription/lab
-report, or handwritten notes) and the app identifies what it is and turns it into
-something useful — a deadline reminder, a digital health record, or editable text.
-See `01-temp/plan.md` for the full pitch.
+OffPaper is a web app where users photograph paper documents (bills, prescriptions, lab reports, deadlines, plans/notes), and the app automatically classifies them, generates a 10–20 word summary, and converts them into structured digital records.
 
 ## Status
-Early planning stage — no code written yet.
+Active implementation — 2-pass Gemini AI pipeline and multi-category dashboard are functional.
 
-## Tech Stack (decided)
-- **Backend:** PHP, no framework, no build step.
-- **Database:** PostgreSQL (DB Name: `offpapper`, DB User: `offpapper`, Host: `localhost`, Port: `5432`). Access via PHP PDO (`pdo_pgsql`). Configuration loaded from `.env` (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`).
-- **Frontend:** Vanilla HTML5, CSS, JavaScript. No bundlers, no build tools, no JS
-  framework (no React/Vue/webpack/npm build pipeline).
-- **Camera capture:** Default to `<input type="file" accept="image/*"
-  capture="environment">` — opens the native camera/file picker with no JS required
-  and works consistently across mobile and desktop. Only move to `getUserMedia` +
-  `<video>`/`<canvas>` if a live in-page preview becomes a specific requirement (it
-  adds stream-management complexity and requires HTTPS in production).
-- **AI / OCR:** Google Gemini API (Flash / Flash-Lite models) for ALL AI tasks —
-  document classification (bill vs. prescription vs. note), OCR and handwriting
-  extraction, and structured data extraction (amount, due date, etc.). Call the
-  Gemini REST API directly via PHP `curl` (image + prompt in, JSON out) — no SDK.
-  No other AI providers are to be used in this project.
-  - Exact Gemini model IDs still need confirming against Google's current docs
-    before being hardcoded anywhere.
+## Tech Stack
+- **Backend:** Plain PHP (no framework, no build step).
+- **Database:** PostgreSQL (`offpapper` DB via PHP PDO `pdo_pgsql`).
+- **Frontend:** Vanilla HTML5, CSS, JS (no bundlers/frameworks).
+- **AI Engine:** Google Gemini REST API (`gemini-3.5-flash-lite`) via PHP cURL.
 
-## Constraints
-- No build tooling anywhere in the stack.
-- If `getUserMedia` is ever used, camera access requires HTTPS in production
-  (localhost is exempt for dev).
+## AI Pipeline Architecture (2-Pass)
+1. **Pass 1 (Classifier):** Analyzes document image $\rightarrow$ returns multi-label `categories` array (`prescription`, `labreport`, `plan`, `bills`, `deadline`) and a strict **10 to 20 word summary**.
+2. **Pass 2 (Extractors):** Runs category-specific extraction prompt(s) $\rightarrow$ returns structured JSON schema for each detected category.
+
+## Categories & Output Contracts
+- **`bills`:** Vendor, bill date, invoice #, currency, line items (qty, price), subtotal, tax, total, due date.
+- **`deadline`:** Title, due date, due time, priority (high/med/low), issuer, action required.
+- **`prescription`:** Doctor, clinic/hospital, Rx date, patient name, medications list.
+- **`labreport`:** Lab name, report date, patient, test results (value, unit, reference range, status flag).
+- **`plan`:** Plan title, date, sequential action items checklist, notes.
+
+## Schemas Reference
+- [`public/document_ui_schemas.json`](file:///var/www/egnitech.com/html/wp-content/projects/sketch-n-ship/offpaper/public/document_ui_schemas.json)
+- [`src/ai/document_upload/DocumentSchemas.php`](file:///var/www/egnitech.com/html/wp-content/projects/sketch-n-ship/offpaper/src/ai/document_upload/DocumentSchemas.php)
+- [`src/ai/document_upload/DocumentPipeline.php`](file:///var/www/egnitech.com/html/wp-content/projects/sketch-n-ship/offpaper/src/ai/document_upload/DocumentPipeline.php)
