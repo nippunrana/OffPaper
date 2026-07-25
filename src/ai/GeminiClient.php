@@ -42,37 +42,45 @@ class GeminiClient
         $model = $options['model'] ?? $this->defaultModel;
         $url = $this->baseUrl . rawurlencode($model) . ':generateContent?key=' . urlencode($this->apiKey);
 
-        $parts = [];
+        if (!empty($options['contents']) && is_array($options['contents'])) {
+            $requestBody = [
+                'contents' => $options['contents']
+            ];
+        } else {
+            $parts = [];
 
-        // Attach file (image/PDF) as base64 inlineData if provided
-        if (!empty($options['filePath']) && file_exists($options['filePath'])) {
-            $fileData = file_get_contents($options['filePath']);
-            if ($fileData === false) {
-                throw new RuntimeException('Failed to read file for Gemini request: ' . $options['filePath']);
+            // Attach file (image/PDF) as base64 inlineData if provided
+            if (!empty($options['filePath']) && file_exists($options['filePath'])) {
+                $fileData = file_get_contents($options['filePath']);
+                if ($fileData === false) {
+                    throw new RuntimeException('Failed to read file for Gemini request: ' . $options['filePath']);
+                }
+
+                $mimeType = $options['mimeType'] ?? $this->detectMimeType($options['filePath'], $fileData);
+                
+                $parts[] = [
+                    'inlineData' => [
+                        'mimeType' => $mimeType,
+                        'data' => base64_encode($fileData)
+                    ]
+                ];
             }
 
-            $mimeType = $options['mimeType'] ?? $this->detectMimeType($options['filePath'], $fileData);
-            
-            $parts[] = [
-                'inlineData' => [
-                    'mimeType' => $mimeType,
-                    'data' => base64_encode($fileData)
+            // Add prompt text
+            if ($prompt !== '') {
+                $parts[] = [
+                    'text' => $prompt
+                ];
+            }
+
+            $requestBody = [
+                'contents' => [
+                    [
+                        'parts' => $parts
+                    ]
                 ]
             ];
         }
-
-        // Add prompt text
-        $parts[] = [
-            'text' => $prompt
-        ];
-
-        $requestBody = [
-            'contents' => [
-                [
-                    'parts' => $parts
-                ]
-            ]
-        ];
 
         // System Instruction
         if (!empty($options['systemInstruction'])) {
