@@ -59,10 +59,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' || ($input['mode'] ?? '') === 'get_hist
             $chatHistory = is_array($kbRow['chat_history']) ? $kbRow['chat_history'] : (json_decode($kbRow['chat_history'], true) ?: []);
         }
 
+        // Pull plan_snapshots from user_uploads extracted_json
+        $planSnapshots = [];
+        $extractedStmt = $db->prepare('SELECT extracted_json FROM user_uploads WHERE id = :id');
+        $extractedStmt->execute(['id' => $doc['id']]);
+        $extractedRow = $extractedStmt->fetch();
+        if (!empty($extractedRow['extracted_json'])) {
+            $ext = is_array($extractedRow['extracted_json'])
+                ? $extractedRow['extracted_json']
+                : (json_decode($extractedRow['extracted_json'], true) ?: []);
+            $planSnapshots = $ext['plan_snapshots'] ?? [];
+        }
+
         echo json_encode([
-            'ok' => true,
-            'chat_history' => $chatHistory,
-            'summary' => $kbRow['summary'] ?? null,
+            'ok'             => true,
+            'chat_history'   => $chatHistory,
+            'summary'        => $kbRow['summary'] ?? null,
+            'plan_snapshots' => $planSnapshots,
         ]);
         exit;
     } catch (Throwable $e) {

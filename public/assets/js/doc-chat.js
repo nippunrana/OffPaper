@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatInput = document.getElementById('docChatInput');
   const sendBtn = document.getElementById('docChatSendBtn');
   const quickPromptsContainer = document.getElementById('chatQuickPrompts');
+  const finalisePlanBtn = document.getElementById('docChatFinalisePlanBtn');
+  const planBanner = document.getElementById('docChatPlanBanner');
 
   let currentDocument = null;
   let chatMode = null; // null for normal chat, 'plan_assist' for Improve Plan
@@ -143,6 +145,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show New Chat button only when there's saved history to clear
     if (newChatBtn) newChatBtn.style.display = 'none';
 
+    // Show/hide the Finalise Plan button based on mode
+    if (finalisePlanBtn) {
+      finalisePlanBtn.style.display = chatMode === 'plan_assist' ? 'inline-flex' : 'none';
+    }
+
+    // If plan_assist, check for a previously saved plan snapshot
+    if (chatMode === 'plan_assist') {
+      loadPlanSnapshot(doc);
+    } else if (planBanner) {
+      planBanner.style.display = 'none';
+      planBanner.innerHTML = '';
+    }
+
     // Show modal
     chatModal.style.display = 'flex';
     requestAnimationFrame(() => {
@@ -206,6 +221,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function sendUserMessage(text) {
+    // --- Magic phrase: intercept & trigger plan finalisation ---
+    const magicPhrase = 'amazing, lets update the plan';
+    if (chatMode === 'plan_assist' && text.trim().toLowerCase() === magicPhrase) {
+      triggerFinalisePlan();
+      return;
+    }
+
     newMessageSentInSession = true;
     if (newChatBtn) newChatBtn.style.display = 'inline-flex';
 
@@ -306,6 +328,157 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error('Error clearing chat history:', err);
     }
+  }
+
+  // ----------------------------------------------------------------
+  // Finalise Plan — synthesise chat → save snapshot → clear & display
+  // ----------------------------------------------------------------
+  async function triggerFinalisePlan() {
+    if (!currentDocument) return;
+
+    if (chatMessages) chatMessages.innerHTML = '';
+    showTyping();
+    if (chatTyping) {
+      const typingText = chatTyping.querySelector('.typing-text');
+      if (typingText) typingText.textContent = '✨ Studying the conversation & finalising your plan...';
+    }
+
+    try {
+      const url = window.OFFPAPER_CHAT_FINALISE_URL || 'api/chat_finalise_plan.php';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          document_id: currentDocument.id || 0,
+          uuid: currentDocument.uuid || ''
+        })
+      });
+
+      const data = await res.json();
+      hideTyping();
+
+      // Reset typing text back to default
+      if (chatTyping) {
+        const typingText = chatTyping.querySelector('.typing-text');
+        if (typingText) typingText.textContent = 'AI is reading document details...';
+      }
+
+      if (!data.ok) {
+        appendMessage({
+          sender: 'ai',
+          html: `<p>⚠️ ${escapeHtml(data.error || 'Could not finalise the plan. Please try again.')}</p>`,
+          time: getCurrentTimeFormatted()
+        });
+        return;
+      }
+
+      newMessageSentInSession = false;
+      if (newChatBtn) newChatBtn.style.display = 'none';
+
+      renderFinalisedPlan(data.plan_text, data.finalised_at);
+
+      // Refresh the plan banner so it shows the newest snapshot
+      displayPlanSnapshot(data.plan_text, data.finalised_at);
+
+    } catch (err) {
+      console.error('Finalise Plan error:', err);
+      hideTyping();
+      if (chatTyping) {
+        const typingText = chatTyping.querySelector('.typing-text');
+        if (typingText) typingText.textContent = 'AI is reading document details...';
+      }
+      appendMessage({
+        sender: 'ai',
+        html: '<p>⚠️ Connection error while finalising. Please try again.</p>',
+        time: getCurrentTimeFormatted()
+      });
+    }
+  }
+
+  // Wire the Finalise Plan button
+  if (finalisePlanBtn) {
+    finalisePlanBtn.addEventListener('click', () => {
+      triggerFinalisePlan();
+    });
+  }
+
+  // Load the latest plan snapshot from extracted_json (via chat GET response) and show in banner
+  async function loadPlanSnapshot(doc) {
+    if (!planBanner) return;
+    planBanner.style.display = 'none';
+    planBanner.innerHTML = '';
+
+    try {
+      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const docId = doc.id || 0;
+      const uuid  = doc.uuid || '';
+      const fetchUrl = `${chatApiUrl}?document_id=${docId}&uuid=${encodeURIComponent(uuid)}`;
+
+      const res = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (!data.ok) return;
+
+      // plan_snapshots are returned by the GET endpoint
+      const snapshots = data.plan_snapshots || null;
+
+      if (Array.isArray(snapshots) && snapshots.length > 0) {
+        const latest = snapshots[0];
+        displayPlanSnapshot(latest.plan_text, latest.finalised_at);
+      }
+    } catch (err) {
+      console.error('Error loading plan snapshot:', err);
+    }
+  }
+
+  function displayPlanSnapshot(planText, finalisedAt) {
+    if (!planBanner) return;
+    const dateStr = finalisedAt ? new Date(finalisedAt).toLocaleString([], {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }) : '';
+
+    planBanner.innerHTML = `
+      <div class="plan-banner__inner">
+        <div class="plan-banner__header">
+          <span class="plan-banner__icon">📋</span>
+          <span class="plan-banner__title">Latest Saved Plan</span>
+          ${dateStr ? `<span class="plan-banner__date">Updated ${escapeHtml(dateStr)}</span>` : ''}
+        </div>
+        <div class="plan-banner__body">${formatMarkdownResponse(planText)}</div>
+      </div>
+    `;
+    planBanner.style.display = 'block';
+  }
+
+  function renderFinalisedPlan(planText, finalisedAt) {
+    if (!chatMessages) return;
+    chatMessages.innerHTML = '';
+
+    const dateStr = finalisedAt ? new Date(finalisedAt).toLocaleString([], {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }) : getCurrentTimeFormatted();
+
+    const formattedHtml = formatMarkdownResponse(planText);
+    const wrapperHtml = `
+      <div class="plan-snapshot-card">
+        <div class="plan-snapshot-card__header">
+          <span class="plan-snapshot-card__icon">🎯</span>
+          <span class="plan-snapshot-card__title">Finalised Plan</span>
+          <span class="plan-snapshot-badge">Saved ${escapeHtml(dateStr)}</span>
+        </div>
+        <div class="plan-snapshot-card__body">${formattedHtml}</div>
+      </div>
+      <p style="font-size:0.82rem; color:var(--color-text-muted); margin-top:0.5rem; text-align:center;">🚀 Plan locked in! Continue chatting to refine further.</p>
+    `;
+
+    appendMessage({
+      sender: 'ai',
+      html: wrapperHtml,
+      time: dateStr
+    });
   }
 
   async function loadExistingChatHistory(doc) {

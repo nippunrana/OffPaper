@@ -55,6 +55,9 @@
         </div>
       </div>
 
+      <!-- Plan Snapshot Banner (shown when a saved plan exists) -->
+      <div id="docChatPlanBanner" class="doc-chat-plan-banner" style="display: none;" aria-live="polite"></div>
+
       <!-- Messages Stream -->
       <div id="docChatMessages" class="doc-chat-messages" role="log" aria-live="polite">
         <!-- Messages rendered dynamically via JS -->
@@ -83,6 +86,10 @@
             autocomplete="off"
             aria-label="Ask anything about this document"
           >
+          <button type="button" id="docChatFinalisePlanBtn" class="doc-chat-finalise-btn" aria-label="Finalise Plan" style="display: none;" title="Finalise the Plan — study chat & lock in the plan">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            <span>Finalise</span>
+          </button>
           <button type="submit" id="docChatSendBtn" class="doc-chat-send-btn" aria-label="Send message" disabled>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
