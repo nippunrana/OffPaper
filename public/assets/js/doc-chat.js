@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatForm = document.getElementById('docChatForm');
   const chatInput = document.getElementById('docChatInput');
   const sendBtn = document.getElementById('docChatSendBtn');
+  const micBtn = document.getElementById('docChatMicBtn');
   const quickPromptsContainer = document.getElementById('chatQuickPrompts');
   const finalisePlanBtn = document.getElementById('docChatFinalisePlanBtn');
   const newChatBtn = document.getElementById('docChatNewChatBtn');
@@ -32,6 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let chatMode = null; // null for normal chat, 'plan_assist' for Improve Plan
   let newMessageSentInSession = false;
   let allPlanSnapshots = []; // cached snapshots for version tabs
+
+  // Voice Input (Speech to Text) State Variables
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+  let recordingTimer = null;
+  let activeAudioStream = null;
 
   // Listen for open chat triggers on cards or detail modals
   document.addEventListener('click', (e) => {
@@ -88,6 +96,152 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       handleSendMessage();
     });
+  }
+
+  // Voice Input (Speech to Text) via Gemini 3.5 Flash Lite
+  if (micBtn) {
+    micBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (isRecording) {
+        stopVoiceRecording();
+      } else {
+        startVoiceRecording();
+      }
+    });
+  }
+
+  function startVoiceRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Microphone access is not supported in this browser.');
+      return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((stream) => {
+        activeAudioStream = stream;
+        audioChunks = [];
+
+        let mimeType = '';
+        const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/wav'];
+        for (const t of types) {
+          if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) {
+            mimeType = t;
+            break;
+          }
+        }
+
+        const options = mimeType ? { mimeType } : {};
+        mediaRecorder = new MediaRecorder(stream, options);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunks.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          processRecordedAudio(mimeType || 'audio/webm');
+        };
+
+        mediaRecorder.start(200);
+        isRecording = true;
+
+        if (micBtn) {
+          micBtn.classList.add('is-recording');
+          micBtn.setAttribute('aria-label', 'Stop recording voice');
+          micBtn.title = 'Recording... Click to finish speaking';
+        }
+
+        if (recordingTimer) clearTimeout(recordingTimer);
+        recordingTimer = setTimeout(() => {
+          if (isRecording) {
+            stopVoiceRecording();
+          }
+        }, 30000);
+      })
+      .catch((err) => {
+        console.error('Microphone permission error:', err);
+        alert('Could not access microphone. Please check your browser microphone permissions.');
+        resetMicUi();
+      });
+  }
+
+  function stopVoiceRecording() {
+    if (recordingTimer) {
+      clearTimeout(recordingTimer);
+      recordingTimer = null;
+    }
+
+    isRecording = false;
+
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+
+    resetMicUi();
+  }
+
+  function resetMicUi() {
+    if (micBtn) {
+      micBtn.classList.remove('is-recording');
+      micBtn.setAttribute('aria-label', 'Voice input (Speech to text)');
+      micBtn.title = 'Speak your prompt (transcribed by Gemini Flash Lite)';
+    }
+  }
+
+  async function processRecordedAudio(mimeType) {
+    if (activeAudioStream) {
+      activeAudioStream.getTracks().forEach((track) => track.stop());
+      activeAudioStream = null;
+    }
+
+    if (!audioChunks.length) {
+      return;
+    }
+
+    const audioBlob = new Blob(audioChunks, { type: mimeType });
+    audioChunks = [];
+
+    if (audioBlob.size < 500) {
+      return;
+    }
+
+    if (micBtn) {
+      micBtn.classList.add('is-transcribing');
+      micBtn.title = 'Transcribing with Gemini Flash Lite...';
+    }
+
+    const transcribeUrl = window.OFFPAPER_TRANSCRIBE_URL || 'api/transcribe_audio.php';
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'speech.webm');
+
+    try {
+      const response = await fetch(transcribeUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.ok && result.transcript) {
+        const text = result.transcript.trim();
+        if (text && chatInput) {
+          const currentText = chatInput.value.trim();
+          chatInput.value = currentText ? (currentText + ' ' + text) : text;
+          chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+          chatInput.focus();
+        }
+      } else if (result.error) {
+        console.warn('Speech-to-text error:', result.error);
+      }
+    } catch (err) {
+      console.error('Error sending audio to Gemini STT API:', err);
+    } finally {
+      if (micBtn) {
+        micBtn.classList.remove('is-transcribing');
+        micBtn.title = 'Speak your prompt (transcribed by Gemini Flash Lite)';
+      }
+    }
   }
 
   // Handle quick prompt chip clicks
@@ -194,6 +348,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeChatModal() {
     if (!chatModal) return;
+    if (isRecording) {
+      stopVoiceRecording();
+    }
     chatModal.classList.remove('is-open');
 
     // Fire chat_finalize.php if closing plan_assist session with new messages

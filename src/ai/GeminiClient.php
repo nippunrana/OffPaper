@@ -185,6 +185,11 @@ class GeminiClient
             'png'        => 'image/png',
             'webp'       => 'image/webp',
             'pdf'        => 'application/pdf',
+            'webm'       => 'audio/webm',
+            'wav'        => 'audio/wav',
+            'ogg'        => 'audio/ogg',
+            'mp3'        => 'audio/mp3',
+            'm4a', 'mp4' => 'audio/mp4',
             default      => 'image/jpeg',
         };
     }

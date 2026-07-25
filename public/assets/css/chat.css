@@ -572,6 +572,100 @@
   box-shadow: none;
 }
 
+/* Mic (Speech to Text) Button */
+.doc-chat-mic-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-strong, #D3C4A3);
+  border-radius: var(--radius-md, 0.625rem);
+  background: var(--paper-100, #F7F2E7);
+  color: var(--color-text-secondary, #6B5E4E);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.doc-chat-mic-btn:hover {
+  background: var(--paper-200, #F0E8D6);
+  border-color: var(--clay-600, #C2410C);
+  color: var(--clay-600, #C2410C);
+  transform: scale(1.04);
+}
+
+.doc-chat-mic-btn:focus-visible {
+  outline: 2px solid var(--clay-600, #C2410C);
+  outline-offset: 2px;
+}
+
+/* Mic Active Recording State */
+.doc-chat-mic-btn.is-recording {
+  background: #DC2626;
+  border-color: #B91C1C;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+  animation: micPulseRed 1.5s infinite ease-in-out;
+}
+
+.doc-chat-mic-btn.is-recording:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+.doc-chat-mic-pulse {
+  display: none;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #DC2626;
+  box-shadow: 0 0 6px #DC2626;
+}
+
+.doc-chat-mic-btn.is-recording .doc-chat-mic-pulse {
+  display: block;
+  animation: micDotPing 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Mic Transcribing State */
+.doc-chat-mic-btn.is-transcribing {
+  background: var(--paper-200, #F0E8D6);
+  border-color: var(--clay-600, #C2410C);
+  color: var(--clay-600, #C2410C);
+  cursor: wait;
+  pointer-events: none;
+}
+
+.doc-chat-mic-btn.is-transcribing .doc-chat-mic-icon {
+  animation: micSpin 0.9s linear infinite;
+}
+
+@keyframes micPulseRed {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25); }
+  50% { box-shadow: 0 0 0 7px rgba(220, 38, 38, 0.1); }
+}
+
+@keyframes micDotPing {
+  75%, 100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes micSpin {
+  100% { transform: rotate(360deg); }
+}
+
 /* ── RIGHT: Plan Panel ─────────────────────────────────────────────────── */
 .plan-panel {
   display: none; /* toggled via .plan-panel--open on parent */
