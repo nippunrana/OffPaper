@@ -32,3 +32,17 @@ CREATE TABLE IF NOT EXISTS user_uploads (
 CREATE INDEX IF NOT EXISTS idx_user_uploads_user_id ON user_uploads(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_uploads_uuid ON user_uploads(uuid);
 
+CREATE TABLE IF NOT EXISTS user_uploads_knowledgebase (
+    id             BIGSERIAL   PRIMARY KEY,
+    user_upload_id BIGINT      NOT NULL UNIQUE REFERENCES user_uploads(id) ON DELETE CASCADE,
+    user_id        BIGINT      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    summary        TEXT,                                    -- AI-generated summary of document AI chat sessions
+    chat_history   JSONB       NOT NULL DEFAULT '[]'::jsonb, -- Full JSON conversation log
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_uploads_kb_upload_id ON user_uploads_knowledgebase(user_upload_id);
+CREATE INDEX IF NOT EXISTS idx_user_uploads_kb_user_id ON user_uploads_knowledgebase(user_id);
+
+

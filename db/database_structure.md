@@ -12,6 +12,8 @@ Primary Schema definition file: [`db/schema.sql`](file:///var/www/egnitech.com/h
 ```mermaid
 erDiagram
     users ||--o{ user_uploads : "owns"
+    users ||--o{ user_uploads_knowledgebase : "owns"
+    user_uploads ||--o| user_uploads_knowledgebase : "has knowledgebase"
 
     users {
         bigint id PK
@@ -37,6 +39,16 @@ erDiagram
         text source
         text status
         timestamptz created_at
+    }
+
+    user_uploads_knowledgebase {
+        bigint id PK
+        bigint user_upload_id FK, UK
+        bigint user_id FK
+        text summary
+        jsonb chat_history
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```
 
@@ -92,3 +104,25 @@ Stores metadata and disk storage paths for documents photographed via browser ca
 - `idx_user_uploads_uuid`: B-tree index on `uuid`
 - `user_uploads_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
+---
+
+### 3. `user_uploads_knowledgebase`
+Stores AI chat conversation logs and cumulative chat summaries for specific document uploads.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `BIGINT` | `PRIMARY KEY`, `BIGSERIAL` | Unique record ID |
+| `user_upload_id` | `BIGINT` | `NOT NULL`, `UNIQUE`, `FK -> user_uploads(id)` | Foreign key linking to target upload (cascades on deletion) |
+| `user_id` | `BIGINT` | `NOT NULL`, `FK -> users(id)` | Foreign key linking to owning user (cascades on deletion) |
+| `summary` | `TEXT` | `NULLABLE` | AI-generated summary of chat interactions for extending/improving the document context |
+| `chat_history` | `JSONB` | `NOT NULL`, `DEFAULT '[]'` | JSON array of chat messages maintaining full context & conversation history |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Creation timestamp |
+| `updated_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Last chat update timestamp |
+
+#### Indexes & Constraints
+- `user_uploads_knowledgebase_pkey`: `PRIMARY KEY (id)`
+- `user_uploads_kb_upload_id_key`: `UNIQUE (user_upload_id)`
+- `idx_user_uploads_kb_upload_id`: B-tree index on `user_upload_id`
+- `idx_user_uploads_kb_user_id`: B-tree index on `user_id`
+- `user_uploads_knowledgebase_user_upload_id_fkey`: `FOREIGN KEY (user_upload_id) REFERENCES user_uploads(id) ON DELETE CASCADE`
+- `user_uploads_knowledgebase_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
