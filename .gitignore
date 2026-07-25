@@ -17,5 +17,5 @@ build/
 .DS_Store
 
 .agents/
-01-temp/
+
 CLAUDE.md
