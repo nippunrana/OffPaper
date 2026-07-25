@@ -23,7 +23,8 @@ function csrf_token(): string
 function csrf_check(): bool
 {
     $submitted = $_POST['csrf'] ?? '';
-    return is_string($submitted) && hash_equals($_SESSION['csrf'] ?? '', $submitted);
+    $expected = $_SESSION['csrf'] ?? '';
+    return $expected !== '' && $submitted !== '' && hash_equals($expected, $submitted);
 }
 
 function flash_set(string $type, string $message): void

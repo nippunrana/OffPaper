@@ -5,7 +5,7 @@ $state = $_GET['state'] ?? '';
 $expected = $_SESSION['oauth_state'] ?? '';
 unset($_SESSION['oauth_state']);
 
-if (isset($_GET['error']) || !hash_equals($expected, $state) || empty($_GET['code'])) {
+if (isset($_GET['error']) || empty($expected) || empty($state) || !hash_equals($expected, $state) || empty($_GET['code'])) {
     flash_set('error', 'Google sign-in failed. Please try again.');
     redirect('/login.php');
 }

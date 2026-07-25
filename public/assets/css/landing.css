@@ -13,12 +13,6 @@
   display: block;
 }
 
-.btn--lg {
-  min-height: 52px;
-  padding: var(--space-4) var(--space-8);
-  font-size: var(--text-base);
-}
-
 /* --- Hero --- */
 .hero {
   position: relative;

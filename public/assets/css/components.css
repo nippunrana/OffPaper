@@ -209,6 +209,12 @@
   width: 100%;
 }
 
+.btn--lg {
+  min-height: 52px;
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--text-base);
+}
+
 .btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
