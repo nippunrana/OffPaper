@@ -153,7 +153,8 @@ class DocumentPipeline
         $plan = $extractedData['plan'] ?? [];
 
         $vendor = $bills['vendor_name'] ?? null;
-        $total = isset($bills['grand_total']) && is_numeric($bills['grand_total']) ? '$' . number_format((float)$bills['grand_total'], 2) : null;
+        $curr = !empty($bills['currency']) ? trim($bills['currency']) . ' ' : '';
+        $total = isset($bills['grand_total']) && is_numeric($bills['grand_total']) ? $curr . number_format((float)$bills['grand_total'], 2) : null;
         $dueDate = $bills['payment_due_date'] ?? $deadline['due_date'] ?? null;
 
         $dlTitle = $deadline['title'] ?? null;

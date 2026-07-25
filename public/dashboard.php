@@ -300,7 +300,8 @@ require VIEWS . '/header.php';
             if (isset($ext['bills']) && !empty($ext['bills']['vendor_name'])) {
                 $vendor = $ext['bills']['vendor_name'];
                 $total = $ext['bills']['grand_total'] ?? null;
-                $docTitle = $vendor . ($total ? ' ($' . number_format((float)$total, 2) . ')' : '');
+                $curr = !empty($ext['bills']['currency']) ? trim($ext['bills']['currency']) . ' ' : '';
+                $docTitle = $vendor . ($total ? ' (' . $curr . number_format((float)$total, 2) . ')' : '');
             } elseif (isset($ext['deadline']) && !empty($ext['deadline']['title'])) {
                 $docTitle = $ext['deadline']['title'];
             } elseif (isset($ext['prescription']) && !empty($ext['prescription']['medications'])) {
@@ -385,9 +386,10 @@ require VIEWS . '/header.php';
                 <?php if (isset($ext['bills'])): ?>
                   <?php $b = $ext['bills']; ?>
                   <?php if (!empty($b['grand_total'])): ?>
+                    <?php $curr = !empty($b['currency']) ? trim($b['currency']) . ' ' : ''; ?>
                     <div class="doc-field">
                       <span class="doc-field__label">Grand Total:</span>
-                      <strong class="doc-field__value">$<?= e(number_format((float)$b['grand_total'], 2)) ?></strong>
+                      <strong class="doc-field__value"><?= e($curr) ?><?= e(number_format((float)$b['grand_total'], 2)) ?></strong>
                     </div>
                   <?php endif; ?>
                 <?php endif; ?>

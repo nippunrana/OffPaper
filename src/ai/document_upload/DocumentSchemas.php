@@ -64,15 +64,15 @@ class DocumentSchemas
     {
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => "You are a high-precision invoice and receipt parser for OffPaper. Extract vendor details, line items, prices, tax, total amounts, and payment due dates from the document image. Read ONLY visible text. Do NOT estimate or compute missing prices.\n\n" . $dateContext,
-            'prompt' => 'Extract all bill/invoice details: vendor name, bill date, invoice number, currency, itemized line items (description, quantity, unit price, total price), subtotal, tax, grand total, and payment due date (resolve any relative due phrase like "due in 15 days", "pay within 30 days" into an absolute YYYY-MM-DD date based on bill date or current system date).',
+            'systemInstruction' => "You are a high-precision invoice and receipt parser for OffPaper. Extract vendor details, line items, prices, tax, total amounts, and payment due dates from the document image. Read ONLY visible text. Do NOT estimate prices or assume currency symbols.\n\n" . $dateContext,
+            'prompt' => 'Extract all bill/invoice details: vendor name, bill date, invoice number, currency (ONLY if explicitly written on document image e.g. $, €, £, ₹, USD; return null if no currency symbol or code is written), itemized line items (description, quantity, unit price, total price), subtotal, tax, grand total, and payment due date (resolve any relative due phrase like "due in 15 days", "pay within 30 days" into an absolute YYYY-MM-DD date based on bill date or current system date).',
             'responseSchema' => [
                 'type' => 'object',
                 'properties' => [
                     'vendor_name' => ['type' => 'string', 'nullable' => true],
                     'bill_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format if available on document', 'nullable' => true],
                     'invoice_number' => ['type' => 'string', 'nullable' => true],
-                    'currency' => ['type' => 'string', 'description' => 'Currency code or symbol e.g. USD, EUR, INR, $', 'nullable' => true],
+                    'currency' => ['type' => 'string', 'description' => 'Exact currency symbol or code visible on document (e.g. $, €, £, ₹, USD, EUR, INR). If NO explicit currency symbol or code is visible in the image, return null — DO NOT guess or default to any currency symbol.', 'nullable' => true],
                     'items' => [
                         'type' => 'array',
                         'items' => [
@@ -266,7 +266,7 @@ class DocumentSchemas
 You are an expert document intelligence prompt designer for OffPaper. Your goal is to analyze the document image and its extracted data, and generate top 3 highly specific, document-grounded questions that will amaze the user with their precise accuracy.
 
 CRITICAL INSTRUCTION — MAKE QUESTIONS DEEPLY SPECIFIC (NOT GENERIC):
-Every generated question MUST explicitly mention actual entities extracted from this document — such as specific vendor names, item descriptions, dollar amounts, medication names, doctor/clinic names, test panel names, deadline titles, or task names!
+Every generated question MUST explicitly mention actual entities extracted from this document — such as specific vendor names, item descriptions, values, medication names, doctor/clinic names, test panel names, deadline titles, or task names!
 
 ❌ FORBIDDEN GENERIC QUESTIONS (DO NOT GENERATE THESE):
 - "What is the grand total and payment due date?"
@@ -276,7 +276,7 @@ Every generated question MUST explicitly mention actual entities extracted from 
 - "What are the key action steps and notes?"
 
 ✅ DEEPLY SPECIFIC EXAMPLES (FOLLOW THIS PATTERN):
-- **bills**: "What is the tax amount and payment due date for the $[Total] bill from [Vendor Name]?", "Can you list the individual prices for [Item Name] and other line items?", "What vendor issued this $[Total] invoice?"
+- **bills**: "What is the tax amount and payment due date for the [Grand Total] bill from [Vendor Name]?", "Can you list the individual prices for [Item Name] and other line items?", "What vendor issued this [Grand Total] invoice?"
 - **deadline**: "What specific action is required before the [Due Date] deadline for [Deadline Title]?", "Who issued the [Deadline Title] notice and what is the priority?", "When is [Deadline Title] due?"
 - **prescription**: "How often should I take [Medication Name] prescribed by [Doctor/Clinic Name]?", "What special instructions did [Doctor Name] give for [Medication Name]?", "What is the dosage and duration for [Medication Name]?"
 - **labreport**: "Why is the [Test Name] result of [Value] flagged as abnormal/high/low by [Lab Name]?", "What is the reference range for [Test Name] on this report?", "Which lab tests were strictly within normal limits for [Patient Name]?"

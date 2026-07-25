@@ -559,7 +559,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let title = doc.filename || 'Document';
 
     if (ext.bills && ext.bills.vendor_name) {
-      title = ext.bills.vendor_name + (ext.bills.grand_total ? ` ($${ext.bills.grand_total})` : '');
+      const currStr = ext.bills.currency ? ext.bills.currency.trim() + ' ' : '';
+      title = ext.bills.vendor_name + (ext.bills.grand_total ? ` (${currStr}${ext.bills.grand_total})` : '');
     } else if (ext.deadline && ext.deadline.title) {
       title = ext.deadline.title;
     } else if (ext.prescription && ext.prescription.medications && ext.prescription.medications.length) {
@@ -603,11 +604,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Bills renderer
             if (catKey === 'bills') {
+              const currStr = secData.currency ? escapeHtml(secData.currency.trim()) + ' ' : '';
               bodyHtml += `
                 <div class="doc-field"><span class="doc-field__label">Vendor:</span> <strong class="doc-field__value">${secData.vendor_name || 'N/A'}</strong></div>
                 <div class="doc-field"><span class="doc-field__label">Bill Date:</span> <span class="doc-field__value">${secData.bill_date || 'N/A'}</span></div>
                 <div class="doc-field"><span class="doc-field__label">Invoice #:</span> <span class="doc-field__value">${secData.invoice_number || 'N/A'}</span></div>
-                <div class="doc-field"><span class="doc-field__label">Grand Total:</span> <strong class="doc-field__value" style="color:#059669;">${secData.currency || '$'} ${secData.grand_total || '0.00'}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Grand Total:</span> <strong class="doc-field__value" style="color:#059669;">${currStr}${secData.grand_total || '0.00'}</strong></div>
                 <div class="doc-field"><span class="doc-field__label">Payment Due:</span> <strong class="doc-field__value doc-field__value--urgent">${secData.payment_due_date || 'N/A'}</strong></div>
               `;
 
@@ -622,8 +624,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tr>
                       <td>${escapeHtml(it.description || '')}</td>
                       <td>${it.quantity ?? 1}</td>
-                      <td>${it.unit_price ? '$' + it.unit_price : '-'}</td>
-                      <td><strong>${it.total_price ? '$' + it.total_price : '-'}</strong></td>
+                      <td>${it.unit_price ? currStr + it.unit_price : '-'}</td>
+                      <td><strong>${it.total_price ? currStr + it.total_price : '-'}</strong></td>
                     </tr>
                   `;
                 });
