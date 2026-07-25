@@ -9,13 +9,13 @@ document, and sync detected deadlines straight to Google Calendar. See
 Working end-to-end: email/password + Google login, camera/file-upload
 capture, a 2-pass Gemini AI pipeline (classification + structured
 extraction), a multi-category dashboard, per-document AI chat with plan
-finalisation, Google Calendar sync, and document deletion.
+finalisation and Gemini Flash Lite Speech-to-Text mic input, Google Calendar sync, and document deletion.
 
 ## Requirements
 
 - PHP 8.1+ with `pdo_pgsql` and `curl` extensions
 - PostgreSQL
-- A [Google Gemini API key](https://aistudio.google.com/app/apikey) (used for all AI features — classification, extraction, and chat)
+- A [Google Gemini API key](https://aistudio.google.com/app/apikey) (used for all AI features — classification, extraction, chat, and speech-to-text transcription)
 
 ```bash
 php -m | grep -E 'pdo_pgsql|curl'   # both must print
@@ -87,7 +87,7 @@ db/schema.sql        users / user_uploads / user_uploads_knowledgebase DDL
 src/                  config, DB, auth, Google OAuth, Calendar, AI pipeline — never web-reachable
 src/ai/               GeminiClient + 2-pass document classification/extraction pipeline
 views/                shared header.php / footer.php partials + chat/scan modals
-public/               docroot: pages + api/{chat,calendar,delete} + assets/{css,js}
+public/               docroot: pages + api/{chat,calendar,delete,transcribe_audio} + assets/{css,js}
 ```
 
 Each page sets `$page_title`, `$page_nav`, `$page_css`, `$page_js` before

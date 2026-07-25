@@ -4,13 +4,13 @@
 OffPaper is a web app where users photograph paper documents (bills, prescriptions, lab reports, deadlines, plans/notes), and the app automatically classifies them, generates a 10–20 word summary, and converts them into structured digital records. Users can also chat with an AI about any scanned document, and sync detected deadlines straight to Google Calendar.
 
 ## Status
-Active implementation. Working end-to-end: email/password + Google login, camera/file-upload capture, 2-pass Gemini AI pipeline, multi-category dashboard with filtering, per-document AI chat (split-panel layout with plan finalisation), Google Calendar sync for deadlines, and document deletion.
+Active implementation. Working end-to-end: email/password + Google login, camera/file-upload capture, 2-pass Gemini AI pipeline, multi-category dashboard with filtering, per-document AI chat (split-panel layout with plan finalisation and Gemini Flash Lite speech-to-text mic input), Google Calendar sync for deadlines, and document deletion.
 
 ## Tech Stack
 - **Backend:** Plain PHP (no framework, no build step).
 - **Database:** PostgreSQL (`offpapper` DB via PHP PDO `pdo_pgsql`).
 - **Frontend:** Vanilla HTML5, CSS, JS (no bundlers/frameworks).
-- **AI Engine:** Google Gemini REST API (`gemini-3.5-flash-lite`) via PHP cURL — the only AI provider used anywhere in this project (classification, extraction, document chat, and plan synthesis).
+- **AI Engine:** Google Gemini REST API (`gemini-3.5-flash-lite`) via PHP cURL — the only AI provider used anywhere in this project (classification, extraction, document chat, plan synthesis, and speech-to-text voice input transcription).
 
 ## Architecture & Request Flow
 - `public/` is the web docroot; `src/` and `views/` live outside it and are never web-reachable.
@@ -44,6 +44,7 @@ Implemented in `src/ai/document_upload/DocumentPipeline.php` + `DocumentSchemas.
 - `public/api/chat.php` — per-document Q&A. Loads the `user_uploads` row (auth + ownership checked), builds a system prompt (bullet-point, bolded-highlights style) plus a context block of the doc's summary/categories/`extracted_json`, re-attaches the original image file, and calls Gemini (`gemini-3.5-flash-lite`) fresh on every message. GET requests return `chat_history`, `summary`, and `plan_snapshots` (from `extracted_json`).
 - **Modes:** normal chat or `plan_assist` (activated automatically for `plan`-type docs, or via `data-chat-mode="plan_assist"`). Plan assist uses a different system prompt focused on strengthening, questioning, and prioritising the plan.
 - Frontend: `views/chat_modal.php` + `public/assets/js/doc-chat.js` + `public/assets/css/chat.css`. The chat API endpoint URL is overridable via `window.OFFPAPER_CHAT_URL` (defaults to `api/chat.php`). The finalise endpoint is overridable via `window.OFFPAPER_CHAT_FINALISE_URL` (defaults to `api/chat_finalise_plan.php`).
+- **Speech-to-Text (STT):** A microphone button (`#docChatMicBtn`) in the chat input bar allows users to speak their prompts. Recorded audio chunks (`MediaRecorder`) are sent to `public/api/transcribe_audio.php`, which utilizes `gemini-3.5-flash-lite` for verbatim speech transcription before placing the text in the input field.
 - **Note:** `chat.php` persists conversation history for **all document types** in `user_uploads_knowledgebase`. History is loaded on modal open and sent as context on subsequent messages. A `mode=clear_history` POST wipes history to support the "New Chat" button in the frontend.
 - **Auto-recap on close:** `public/api/chat_finalize.php` (note: US spelling, distinct from `chat_finalise_plan.php` below) is fired fire-and-forget by `doc-chat.js` when the modal is closed in `plan_assist` mode and at least one new message was sent that session. It summarizes the chat history into a plain-text 2–4 sentence recap via Gemini and upserts it into `user_uploads_knowledgebase.summary` — a lightweight background recap, separate from the explicit "Finalise the Plan" snapshot flow.
 
@@ -85,6 +86,7 @@ Activated only in `plan_assist` mode (plan-type documents). Allows the user to s
 - [`public/upload.php`](public/upload.php) — capture/upload endpoint, triggers the AI pipeline.
 - [`public/dashboard.php`](public/dashboard.php) — main UI: stats, category filter tabs, document grid/cards, detail modal.
 - [`public/api/chat.php`](public/api/chat.php) — document Q&A + history persistence; GET also returns `plan_snapshots`.
+- [`public/api/transcribe_audio.php`](public/api/transcribe_audio.php) — Speech-to-Text audio transcription endpoint powered by Gemini 3.5 Flash Lite.
 - [`public/api/chat_finalize.php`](public/api/chat_finalize.php) — fire-and-forget recap summary on modal close (plan_assist only); writes to `user_uploads_knowledgebase.summary`.
 - [`public/api/chat_finalise_plan.php`](public/api/chat_finalise_plan.php) — plan synthesis endpoint; stores versioned snapshots in `extracted_json`, clears chat.
 - [`public/api/add_to_calendar.php`](public/api/add_to_calendar.php), [`public/api/delete_document.php`](public/api/delete_document.php) — document-scoped JSON API endpoints.
