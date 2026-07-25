@@ -16,9 +16,10 @@ $uploads = [];
 $stats = [
     'total' => 0,
     'bills' => 0,
-    'health' => 0,
-    'notes' => 0,
-    'general' => 0,
+    'deadline' => 0,
+    'prescription' => 0,
+    'labreport' => 0,
+    'plan' => 0,
 ];
 
 try {
@@ -44,23 +45,37 @@ try {
             }
         }
 
-        $type = $u['doc_type'] ?? 'general';
-        if (!in_array($type, ['bill', 'prescription', 'handwritten_note', 'receipt', 'general'], true)) {
-            $type = 'general';
-        }
+        // Extract Summary & Multi-Category list
+        $summary = $extracted['summary'] ?? '';
+        $rawCategories = $extracted['categories'] ?? [];
+        $categories = [];
 
-        $stats['total']++;
-        if ($type === 'bill') {
-            $stats['bills']++;
-        } elseif ($type === 'prescription') {
-            $stats['health']++;
-        } elseif ($type === 'handwritten_note') {
-            $stats['notes']++;
+        if (is_array($rawCategories) && !empty($rawCategories)) {
+            $categories = array_values(array_unique($rawCategories));
         } else {
-            $stats['general']++;
+            $singleType = $u['doc_type'] ?? 'plan';
+            $mapped = match ($singleType) {
+                'bill', 'bills', 'receipt' => ['bills'],
+                'deadline' => ['deadline'],
+                'prescription' => ['prescription'],
+                'labreport', 'lab_report' => ['labreport'],
+                'plan', 'handwritten_note' => ['plan'],
+                default => ['plan'],
+            };
+            $categories = $mapped;
         }
 
-        $u['extracted_data'] = $extracted;
+        // Increment stats
+        $stats['total']++;
+        foreach ($categories as $cat) {
+            if (isset($stats[$cat])) {
+                $stats[$cat]++;
+            }
+        }
+
+        $u['summary'] = $summary;
+        $u['categories'] = $categories;
+        $u['extracted_data'] = $extracted['data'] ?? $extracted;
         $uploads[] = $u;
     }
 } catch (Throwable $e) {
@@ -116,25 +131,35 @@ require VIEWS . '/header.php';
           </svg>
         </span>
         <h2>Scan your first document</h2>
-        <p>Photograph a bill, prescription, or handwritten note and OffPaper will read it for you.</p>
+        <p>Photograph a bill, prescription, lab report, plan, or deadline notice, and OffPaper will automatically classify and turn it into actionable data.</p>
         <button type="button" class="btn btn--primary btn--lg" data-open-scan-modal>Scan a document</button>
       </div>
 
       <div class="category-grid">
         <article class="category-card">
           <span class="category-card__icon" aria-hidden="true">⚡</span>
+          <h3>Bills</h3>
+          <p>Itemized vendor items, prices, tax, and total bill amounts.</p>
+        </article>
+        <article class="category-card">
+          <span class="category-card__icon" aria-hidden="true">⏰</span>
           <h3>Deadlines</h3>
-          <p>Once you scan a bill, it'll show up here with the due date already filled in.</p>
+          <p>Submission dates, payment due dates, and priority action items.</p>
         </article>
         <article class="category-card">
           <span class="category-card__icon" aria-hidden="true">💊</span>
-          <h3>Health records</h3>
-          <p>Prescriptions and lab reports will appear here as clean, searchable records.</p>
+          <h3>Prescriptions</h3>
+          <p>Doctor instructions, medication dosages, and intake schedules.</p>
         </article>
         <article class="category-card">
-          <span class="category-card__icon" aria-hidden="true">✎</span>
-          <h3>Notes</h3>
-          <p>Handwritten notes you scan will turn into editable text here.</p>
+          <span class="category-card__icon" aria-hidden="true">🔬</span>
+          <h3>Lab Reports</h3>
+          <p>Diagnostic test panels, reference ranges, and abnormal flags.</p>
+        </article>
+        <article class="category-card">
+          <span class="category-card__icon" aria-hidden="true">📋</span>
+          <h3>Plans &amp; Notes</h3>
+          <p>Handwritten notes, goals, and step-by-step action checklists.</p>
         </article>
       </div>
     <?php else: ?>
@@ -145,7 +170,7 @@ require VIEWS . '/header.php';
         <div class="dash-stat-card">
           <div class="dash-stat-card__header">
             <span class="dash-stat-card__icon">📁</span>
-            <span class="dash-stat-card__label">Total Scanned</span>
+            <span class="dash-stat-card__label">Total</span>
           </div>
           <div class="dash-stat-card__value"><?= $stats['total'] ?></div>
         </div>
@@ -153,25 +178,41 @@ require VIEWS . '/header.php';
         <div class="dash-stat-card">
           <div class="dash-stat-card__header">
             <span class="dash-stat-card__icon">⚡</span>
-            <span class="dash-stat-card__label">Deadlines &amp; Bills</span>
+            <span class="dash-stat-card__label">Bills</span>
           </div>
           <div class="dash-stat-card__value"><?= $stats['bills'] ?></div>
         </div>
 
         <div class="dash-stat-card">
           <div class="dash-stat-card__header">
-            <span class="dash-stat-card__icon">💊</span>
-            <span class="dash-stat-card__label">Health Records</span>
+            <span class="dash-stat-card__icon">⏰</span>
+            <span class="dash-stat-card__label">Deadlines</span>
           </div>
-          <div class="dash-stat-card__value"><?= $stats['health'] ?></div>
+          <div class="dash-stat-card__value"><?= $stats['deadline'] ?></div>
         </div>
 
         <div class="dash-stat-card">
           <div class="dash-stat-card__header">
-            <span class="dash-stat-card__icon">✏️</span>
-            <span class="dash-stat-card__label">Notes &amp; Plans</span>
+            <span class="dash-stat-card__icon">💊</span>
+            <span class="dash-stat-card__label">Prescriptions</span>
           </div>
-          <div class="dash-stat-card__value"><?= $stats['notes'] ?></div>
+          <div class="dash-stat-card__value"><?= $stats['prescription'] ?></div>
+        </div>
+
+        <div class="dash-stat-card">
+          <div class="dash-stat-card__header">
+            <span class="dash-stat-card__icon">🔬</span>
+            <span class="dash-stat-card__label">Lab Reports</span>
+          </div>
+          <div class="dash-stat-card__value"><?= $stats['labreport'] ?></div>
+        </div>
+
+        <div class="dash-stat-card">
+          <div class="dash-stat-card__header">
+            <span class="dash-stat-card__icon">📋</span>
+            <span class="dash-stat-card__label">Plans</span>
+          </div>
+          <div class="dash-stat-card__value"><?= $stats['plan'] ?></div>
         </div>
       </div>
 
@@ -185,29 +226,36 @@ require VIEWS . '/header.php';
           </li>
           <?php if ($stats['bills'] > 0): ?>
           <li>
-            <button type="button" class="dash-tab" data-filter="bill" role="tab" aria-selected="false">
-              ⚡ Bills &amp; Deadlines <span class="dash-tab__count"><?= $stats['bills'] ?></span>
+            <button type="button" class="dash-tab" data-filter="bills" role="tab" aria-selected="false">
+              ⚡ Bills <span class="dash-tab__count"><?= $stats['bills'] ?></span>
             </button>
           </li>
           <?php endif; ?>
-          <?php if ($stats['health'] > 0): ?>
+          <?php if ($stats['deadline'] > 0): ?>
+          <li>
+            <button type="button" class="dash-tab" data-filter="deadline" role="tab" aria-selected="false">
+              ⏰ Deadlines <span class="dash-tab__count"><?= $stats['deadline'] ?></span>
+            </button>
+          </li>
+          <?php endif; ?>
+          <?php if ($stats['prescription'] > 0): ?>
           <li>
             <button type="button" class="dash-tab" data-filter="prescription" role="tab" aria-selected="false">
-              💊 Health Records <span class="dash-tab__count"><?= $stats['health'] ?></span>
+              💊 Prescriptions <span class="dash-tab__count"><?= $stats['prescription'] ?></span>
             </button>
           </li>
           <?php endif; ?>
-          <?php if ($stats['notes'] > 0): ?>
+          <?php if ($stats['labreport'] > 0): ?>
           <li>
-            <button type="button" class="dash-tab" data-filter="handwritten_note" role="tab" aria-selected="false">
-              ✏️ Notes &amp; Plans <span class="dash-tab__count"><?= $stats['notes'] ?></span>
+            <button type="button" class="dash-tab" data-filter="labreport" role="tab" aria-selected="false">
+              🔬 Lab Reports <span class="dash-tab__count"><?= $stats['labreport'] ?></span>
             </button>
           </li>
           <?php endif; ?>
-          <?php if ($stats['general'] > 0): ?>
+          <?php if ($stats['plan'] > 0): ?>
           <li>
-            <button type="button" class="dash-tab" data-filter="general" role="tab" aria-selected="false">
-              📄 General &amp; Receipts <span class="dash-tab__count"><?= $stats['general'] ?></span>
+            <button type="button" class="dash-tab" data-filter="plan" role="tab" aria-selected="false">
+              📋 Plans &amp; Notes <span class="dash-tab__count"><?= $stats['plan'] ?></span>
             </button>
           </li>
           <?php endif; ?>
@@ -218,50 +266,35 @@ require VIEWS . '/header.php';
       <div class="doc-grid" id="docGrid">
         <?php foreach ($uploads as $doc): ?>
           <?php
-            $docType = $doc['doc_type'] ?? 'general';
+            $cats = $doc['categories'] ?? ['plan'];
+            $catsAttr = implode(',', $cats);
             $ext = $doc['extracted_data'] ?? [];
+            $summary = $doc['summary'] ?? '';
             $createdFormatted = date('M j, Y \a\t g:i a', strtotime($doc['created_at']));
             $status = $doc['status'] ?? 'pending';
 
-            // Determine title and key highlights based on extracted data
-            $docTitle = 'Document';
-            $icon = '📄';
-            $typeLabel = 'General Document';
-            $typeClass = 'doc-type--general';
+            // Determine primary document title based on extracted category data
+            $docTitle = 'Scanned Document';
 
-            if ($docType === 'bill') {
-                $icon = '⚡';
-                $typeLabel = 'Bill / Deadline';
-                $typeClass = 'doc-type--bill';
-                $vendor = $ext['biller_name'] ?? $ext['vendor_name'] ?? $ext['payee'] ?? $ext['vendor'] ?? null;
-                $amount = $ext['amount_due'] ?? $ext['total_amount'] ?? $ext['amount'] ?? null;
-                if ($vendor) {
-                    $docTitle = $vendor . ($amount ? ' (' . e($amount) . ')' : '');
-                } else {
-                    $docTitle = 'Scanned Bill' . ($amount ? ' — ' . e($amount) : '');
-                }
-            } elseif ($docType === 'prescription') {
-                $icon = '💊';
-                $typeLabel = 'Health Record';
-                $typeClass = 'doc-type--health';
-                $doctor = $ext['doctor_name'] ?? $ext['prescriber'] ?? $ext['provider'] ?? null;
-                $med = $ext['medication_name'] ?? $ext['medication'] ?? $ext['drug'] ?? null;
-                if ($med) {
-                    $docTitle = $med . ($doctor ? ' (by ' . e($doctor) . ')' : '');
-                } else {
-                    $docTitle = $doctor ? 'Prescription by ' . e($doctor) : 'Health Record';
-                }
-            } elseif ($docType === 'handwritten_note') {
-                $icon = '✏️';
-                $typeLabel = 'Handwritten Note';
-                $typeClass = 'doc-type--note';
-                $noteTitle = $ext['title'] ?? $ext['heading'] ?? $ext['subject'] ?? null;
-                $docTitle = $noteTitle ? $noteTitle : 'Handwritten Note';
-            } else {
-                $docTitle = $ext['title'] ?? $ext['document_title'] ?? $doc['original_filename'];
+            if (isset($ext['bills']) && !empty($ext['bills']['vendor_name'])) {
+                $vendor = $ext['bills']['vendor_name'];
+                $total = $ext['bills']['grand_total'] ?? null;
+                $docTitle = $vendor . ($total ? ' ($' . number_format((float)$total, 2) . ')' : '');
+            } elseif (isset($ext['deadline']) && !empty($ext['deadline']['title'])) {
+                $docTitle = $ext['deadline']['title'];
+            } elseif (isset($ext['prescription']) && !empty($ext['prescription']['medications'])) {
+                $medName = $ext['prescription']['medications'][0]['name'] ?? 'Prescription';
+                $doctor = $ext['prescription']['doctor_name'] ?? null;
+                $docTitle = $medName . ($doctor ? ' (by ' . $doctor . ')' : '');
+            } elseif (isset($ext['labreport']) && !empty($ext['labreport']['lab_name'])) {
+                $docTitle = $ext['labreport']['lab_name'] . ' Report';
+            } elseif (isset($ext['plan']) && !empty($ext['plan']['plan_title'])) {
+                $docTitle = $ext['plan']['plan_title'];
+            } elseif (!empty($doc['original_filename'])) {
+                $docTitle = $doc['original_filename'];
             }
 
-            // Preview image URL via secure file server endpoint
+            // Preview image URL via file helper
             $imgUrl = url('/file.php?uuid=' . $doc['uuid']);
             $docJsonAttr = htmlspecialchars(json_encode([
                 'id' => $doc['id'],
@@ -269,19 +302,34 @@ require VIEWS . '/header.php';
                 'filename' => $doc['original_filename'],
                 'file_path' => $imgUrl,
                 'created_at' => $createdFormatted,
-                'doc_type' => $docType,
                 'status' => $status,
+                'summary' => $summary,
+                'categories' => $cats,
                 'extracted' => $ext,
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
           ?>
 
-          <article class="doc-card" data-doc-type="<?= e($docType) ?>">
+          <article class="doc-card" data-categories="<?= e($catsAttr) ?>">
             <div class="doc-card__thumbnail">
               <img src="<?= e($imgUrl) ?>" alt="<?= e($docTitle) ?>" loading="lazy">
-              <span class="doc-card__badge <?= e($typeClass) ?>">
-                <span class="doc-card__badge-icon"><?= $icon ?></span>
-                <?= e($typeLabel) ?>
-              </span>
+              <div class="doc-card__badges">
+                <?php foreach ($cats as $cat): ?>
+                  <?php
+                    $badgeConfig = match ($cat) {
+                        'bills' => ['icon' => '⚡', 'label' => 'Bill', 'class' => 'doc-type--bills'],
+                        'deadline' => ['icon' => '⏰', 'label' => 'Deadline', 'class' => 'doc-type--deadline'],
+                        'prescription' => ['icon' => '💊', 'label' => 'Rx', 'class' => 'doc-type--prescription'],
+                        'labreport' => ['icon' => '🔬', 'label' => 'Lab Report', 'class' => 'doc-type--labreport'],
+                        'plan' => ['icon' => '📋', 'label' => 'Plan', 'class' => 'doc-type--plan'],
+                        default => ['icon' => '📄', 'label' => 'Doc', 'class' => 'doc-type--plan'],
+                    };
+                  ?>
+                  <span class="doc-card__badge <?= $badgeConfig['class'] ?>">
+                    <span class="doc-card__badge-icon"><?= $badgeConfig['icon'] ?></span>
+                    <?= e($badgeConfig['label']) ?>
+                  </span>
+                <?php endforeach; ?>
+              </div>
             </div>
 
             <div class="doc-card__body">
@@ -298,47 +346,57 @@ require VIEWS . '/header.php';
 
               <h3 class="doc-card__title"><?= e($docTitle) ?></h3>
 
-              <!-- Extracted Fields Snippet -->
+              <!-- 10-20 Word AI Summary Callout -->
+              <?php if (!empty($summary)): ?>
+                <p class="doc-card__summary">“<?= e($summary) ?>”</p>
+              <?php endif; ?>
+
+              <!-- Category Snippets -->
               <div class="doc-card__extracted">
-                <?php if ($docType === 'bill'): ?>
-                  <?php if (!empty($ext['due_date'])): ?>
+                <?php if (isset($ext['bills'])): ?>
+                  <?php $b = $ext['bills']; ?>
+                  <?php if (!empty($b['grand_total'])): ?>
                     <div class="doc-field">
-                      <span class="doc-field__label">Due Date:</span>
-                      <strong class="doc-field__value doc-field__value--urgent"><?= e($ext['due_date']) ?></strong>
+                      <span class="doc-field__label">Grand Total:</span>
+                      <strong class="doc-field__value">$<?= e(number_format((float)$b['grand_total'], 2)) ?></strong>
                     </div>
-                  <?php endif; ?>
-                  <?php if (!empty($ext['amount_due']) || !empty($ext['total_amount'])): ?>
-                    <div class="doc-field">
-                      <span class="doc-field__label">Amount:</span>
-                      <span class="doc-field__value"><?= e($ext['amount_due'] ?? $ext['total_amount']) ?></span>
-                    </div>
-                  <?php endif; ?>
-                <?php elseif ($docType === 'prescription'): ?>
-                  <?php if (!empty($ext['instructions']) || !empty($ext['dosage'])): ?>
-                    <div class="doc-field">
-                      <span class="doc-field__label">Instructions:</span>
-                      <span class="doc-field__value"><?= e($ext['instructions'] ?? $ext['dosage']) ?></span>
-                    </div>
-                  <?php endif; ?>
-                <?php elseif ($docType === 'handwritten_note'): ?>
-                  <?php 
-                    $textPreview = $ext['transcribed_text'] ?? $ext['summary'] ?? $ext['content'] ?? null;
-                    if ($textPreview): 
-                  ?>
-                    <p class="doc-card__text-preview">
-                      <?= e(mb_strimwidth(is_array($textPreview) ? implode(' ', $textPreview) : $textPreview, 0, 120, '...')) ?>
-                    </p>
                   <?php endif; ?>
                 <?php endif; ?>
 
-                <?php if (empty($ext)): ?>
-                  <p class="doc-card__text-preview">Document stored cleanly. AI scanning in progress.</p>
+                <?php if (isset($ext['deadline'])): ?>
+                  <?php $d = $ext['deadline']; ?>
+                  <?php if (!empty($d['due_date'])): ?>
+                    <div class="doc-field">
+                      <span class="doc-field__label">Due Date:</span>
+                      <strong class="doc-field__value doc-field__value--urgent"><?= e($d['due_date']) ?><?= !empty($d['due_time']) ? ' (' . e($d['due_time']) . ')' : '' ?></strong>
+                    </div>
+                  <?php endif; ?>
+                <?php endif; ?>
+
+                <?php if (isset($ext['prescription'])): ?>
+                  <?php $rx = $ext['prescription']; ?>
+                  <?php if (!empty($rx['medications'])): ?>
+                    <div class="doc-field">
+                      <span class="doc-field__label">Medication:</span>
+                      <span class="doc-field__value"><?= e($rx['medications'][0]['name'] ?? 'Prescription') ?></span>
+                    </div>
+                  <?php endif; ?>
+                <?php endif; ?>
+
+                <?php if (isset($ext['labreport'])): ?>
+                  <?php $lab = $ext['labreport']; ?>
+                  <?php if (!empty($lab['test_results'])): ?>
+                    <div class="doc-field">
+                      <span class="doc-field__label">Tests Count:</span>
+                      <span class="doc-field__value"><?= count($lab['test_results']) ?> test items</span>
+                    </div>
+                  <?php endif; ?>
                 <?php endif; ?>
               </div>
 
               <div class="doc-card__actions">
                 <button type="button" class="btn btn--secondary btn--sm btn--block" data-open-doc-detail='<?= $docJsonAttr ?>'>
-                  View Details &amp; AI Summary
+                  View Category JSON &amp; Summary
                 </button>
               </div>
             </div>
@@ -353,7 +411,7 @@ require VIEWS . '/header.php';
 <div id="docDetailModal" class="scan-modal doc-detail-modal" role="dialog" aria-modal="true" aria-labelledby="docDetailTitle" style="display: none;">
   <div class="scan-modal__dialog doc-detail-modal__dialog">
     <div class="scan-modal__header">
-      <h2 id="docDetailTitle">Document Details</h2>
+      <h2 id="docDetailTitle">Document Category Details</h2>
       <button type="button" class="scan-modal__close" id="closeDocDetailBtn" aria-label="Close modal">&times;</button>
     </div>
 
@@ -367,12 +425,18 @@ require VIEWS . '/header.php';
         <!-- Right column: Extracted fields & OCR summary -->
         <div class="doc-detail-content">
           <div class="doc-detail-meta-header">
-            <span id="detailDocBadge" class="doc-card__badge">📄 General</span>
+            <div id="detailBadgesContainer" class="doc-card__badges" style="position:static;"></div>
             <span id="detailDocStatus" class="status-tag">Status</span>
             <time id="detailDocDate" class="doc-card__date"></time>
           </div>
 
           <h3 id="detailDocHeading" class="doc-detail-heading">Document Title</h3>
+
+          <!-- AI Summary Banner -->
+          <div id="detailSummaryBanner" class="doc-detail-summary-banner">
+            <strong>AI Summary</strong>
+            <span id="detailSummaryText"></span>
+          </div>
 
           <div id="detailFieldsContainer" class="doc-detail-fields">
             <!-- Dynamic key-value fields rendered via JS -->
@@ -397,4 +461,3 @@ require VIEWS . '/header.php';
 <?php require VIEWS . '/scan_modal.php'; ?>
 
 <?php require VIEWS . '/footer.php'; ?>
-

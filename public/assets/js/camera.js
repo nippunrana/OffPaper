@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="flash flash--success">
                 <strong>Document captured!</strong><br>
                 Saved with UUID: <code>${data.upload.uuid}</code><br>
-                Stored at: <code>${data.upload.file_path}</code>
+                Classified Categories: <code>${(data.upload.categories || [data.upload.doc_type]).join(', ')}</code>
               </div>
             `;
           }
@@ -348,13 +348,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-
-  // If on standalone scan.php page without modal, init camera directly
+  // Standalone scan.php handler
   if (!scanModal && cameraContainer) {
     initCamera();
   }
 
-  // --- DASHBOARD CATEGORY TAB FILTERING ---
+  // --- DASHBOARD MULTI-CATEGORY TAB FILTERING ---
   const tabBtns = document.querySelectorAll('.dash-tab');
   const docCards = document.querySelectorAll('.doc-card');
 
@@ -369,8 +368,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const filter = tab.dataset.filter;
       docCards.forEach(card => {
-        const cardType = card.dataset.docType;
-        if (filter === 'all' || cardType === filter) {
+        const rawCategories = card.dataset.categories || '';
+        const categoriesList = rawCategories.split(',').map(s => s.trim());
+
+        if (filter === 'all' || categoriesList.includes(filter)) {
           card.style.display = 'flex';
         } else {
           card.style.display = 'none';
@@ -385,10 +386,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const openDetailBtns = document.querySelectorAll('[data-open-doc-detail]');
 
   const detailDocImage = document.getElementById('detailDocImage');
-  const detailDocBadge = document.getElementById('detailDocBadge');
+  const detailBadgesContainer = document.getElementById('detailBadgesContainer');
   const detailDocStatus = document.getElementById('detailDocStatus');
   const detailDocDate = document.getElementById('detailDocDate');
   const detailDocHeading = document.getElementById('detailDocHeading');
+  const detailSummaryBanner = document.getElementById('detailSummaryBanner');
+  const detailSummaryText = document.getElementById('detailSummaryText');
   const detailFieldsContainer = document.getElementById('detailFieldsContainer');
   const detailDownloadLink = document.getElementById('detailDownloadLink');
 
@@ -414,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (detailDocDate) detailDocDate.textContent = doc.created_at || '';
     if (detailDownloadLink) detailDownloadLink.href = doc.file_path || '#';
 
-    // Status badge
+    // Status tag
     if (detailDocStatus) {
       detailDocStatus.className = 'status-tag';
       if (doc.status === 'processed') {
@@ -429,71 +432,224 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Doc Type Badge & Icon
-    if (detailDocBadge) {
-      let icon = '📄';
-      let label = 'General Document';
-      let typeClass = 'doc-type--general';
+    // Category Badges
+    const categories = doc.categories || [doc.doc_type || 'plan'];
+    if (detailBadgesContainer) {
+      detailBadgesContainer.innerHTML = '';
+      categories.forEach(cat => {
+        const badgeEl = document.createElement('span');
+        let icon = '📄';
+        let label = cat;
+        let typeClass = 'doc-type--plan';
 
-      if (doc.doc_type === 'bill') {
-        icon = '⚡';
-        label = 'Bill / Deadline';
-        typeClass = 'doc-type--bill';
-      } else if (doc.doc_type === 'prescription') {
-        icon = '💊';
-        label = 'Health Record';
-        typeClass = 'doc-type--health';
-      } else if (doc.doc_type === 'handwritten_note') {
-        icon = '✏️';
-        label = 'Handwritten Note';
-        typeClass = 'doc-type--note';
-      }
+        if (cat === 'bills') {
+          icon = '⚡'; label = 'Bill'; typeClass = 'doc-type--bills';
+        } else if (cat === 'deadline') {
+          icon = '⏰'; label = 'Deadline'; typeClass = 'doc-type--deadline';
+        } else if (cat === 'prescription') {
+          icon = '💊'; label = 'Prescription'; typeClass = 'doc-type--prescription';
+        } else if (cat === 'labreport') {
+          icon = '🔬'; label = 'Lab Report'; typeClass = 'doc-type--labreport';
+        } else if (cat === 'plan') {
+          icon = '📋'; label = 'Plan'; typeClass = 'doc-type--plan';
+        }
 
-      detailDocBadge.className = `doc-card__badge ${typeClass}`;
-      detailDocBadge.innerHTML = `<span class="doc-card__badge-icon">${icon}</span> ${label}`;
+        badgeEl.className = `doc-card__badge ${typeClass}`;
+        badgeEl.innerHTML = `<span class="doc-card__badge-icon">${icon}</span> ${label}`;
+        detailBadgesContainer.appendChild(badgeEl);
+      });
     }
 
-    // Title & Fields
+    // AI Summary Banner
+    if (detailSummaryBanner && detailSummaryText) {
+      if (doc.summary) {
+        detailSummaryBanner.style.display = 'block';
+        detailSummaryText.textContent = `“${doc.summary}”`;
+      } else {
+        detailSummaryBanner.style.display = 'none';
+      }
+    }
+
+    // Dynamic Title
     const ext = doc.extracted || {};
     let title = doc.filename || 'Document';
 
-    if (doc.doc_type === 'bill') {
-      const vendor = ext.biller_name || ext.vendor_name || ext.payee || ext.vendor;
-      const amt = ext.amount_due || ext.total_amount || ext.amount;
-      if (vendor) title = `${vendor}${amt ? ' (' + amt + ')' : ''}`;
-    } else if (doc.doc_type === 'prescription') {
-      const med = ext.medication_name || ext.medication || ext.drug;
-      const docName = ext.doctor_name || ext.prescriber || ext.provider;
-      if (med) title = `${med}${docName ? ' (by ' + docName + ')' : ''}`;
-    } else if (doc.doc_type === 'handwritten_note') {
-      if (ext.title || ext.heading) title = ext.title || ext.heading;
-    } else if (ext.title || ext.document_title) {
-      title = ext.title || ext.document_title;
+    if (ext.bills && ext.bills.vendor_name) {
+      title = ext.bills.vendor_name + (ext.bills.grand_total ? ` ($${ext.bills.grand_total})` : '');
+    } else if (ext.deadline && ext.deadline.title) {
+      title = ext.deadline.title;
+    } else if (ext.prescription && ext.prescription.medications && ext.prescription.medications.length) {
+      title = ext.prescription.medications[0].name + (ext.prescription.doctor_name ? ` (by ${ext.prescription.doctor_name})` : '');
+    } else if (ext.labreport && ext.labreport.lab_name) {
+      title = ext.labreport.lab_name + ' Report';
+    } else if (ext.plan && ext.plan.plan_title) {
+      title = ext.plan.plan_title;
     }
 
     if (detailDocHeading) detailDocHeading.textContent = title;
 
-    // Render extracted fields
+    // Render Extracted Fields by Category
     if (detailFieldsContainer) {
       detailFieldsContainer.innerHTML = '';
 
-      if (Object.keys(ext).length === 0) {
-        detailFieldsContainer.innerHTML = '<p class="doc-card__text-preview">No extracted AI data available yet.</p>';
+      if (!ext || Object.keys(ext).length === 0) {
+        detailFieldsContainer.innerHTML = '<p class="doc-card__text-preview">AI processing in progress or no extracted data available.</p>';
       } else {
-        for (const [key, val] of Object.entries(ext)) {
-          if (val === null || val === undefined || val === '') continue;
+        // Check if extracted has category keys (bills, deadline, prescription, labreport, plan)
+        const categoryKeys = ['bills', 'deadline', 'prescription', 'labreport', 'plan'];
+        let renderedSections = false;
 
-          const itemEl = document.createElement('div');
-          itemEl.className = 'doc-detail-item';
+        categoryKeys.forEach(catKey => {
+          if (ext[catKey] && typeof ext[catKey] === 'object') {
+            renderedSections = true;
+            const secData = ext[catKey];
 
-          const formattedKey = key.replace(/_/g, ' ').toUpperCase();
-          const formattedVal = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+            const secEl = document.createElement('div');
+            secEl.className = 'detail-category-block';
 
-          itemEl.innerHTML = `
-            <span class="doc-detail-item__label">${formattedKey}</span>
-            <span class="doc-detail-item__value">${formattedVal}</span>
-          `;
-          detailFieldsContainer.appendChild(itemEl);
+            let secTitle = 'Category Details';
+            let secIcon = '📄';
+            if (catKey === 'bills') { secTitle = 'Bill & Invoice Items'; secIcon = '⚡'; }
+            if (catKey === 'deadline') { secTitle = 'Deadline Notice'; secIcon = '⏰'; }
+            if (catKey === 'prescription') { secTitle = 'Medical Prescription'; secIcon = '💊'; }
+            if (catKey === 'labreport') { secTitle = 'Lab Test Panel'; secIcon = '🔬'; }
+            if (catKey === 'plan') { secTitle = 'Action Plan & Checklist'; secIcon = '📋'; }
+
+            let bodyHtml = `<h4 class="detail-category-block__title"><span>${secIcon}</span> ${secTitle}</h4>`;
+
+            // Bills renderer
+            if (catKey === 'bills') {
+              bodyHtml += `
+                <div class="doc-field"><span class="doc-field__label">Vendor:</span> <strong class="doc-field__value">${secData.vendor_name || 'N/A'}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Bill Date:</span> <span class="doc-field__value">${secData.bill_date || 'N/A'}</span></div>
+                <div class="doc-field"><span class="doc-field__label">Invoice #:</span> <span class="doc-field__value">${secData.invoice_number || 'N/A'}</span></div>
+                <div class="doc-field"><span class="doc-field__label">Grand Total:</span> <strong class="doc-field__value" style="color:#059669;">${secData.currency || '$'} ${secData.grand_total || '0.00'}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Payment Due:</span> <strong class="doc-field__value doc-field__value--urgent">${secData.payment_due_date || 'N/A'}</strong></div>
+              `;
+
+              if (secData.items && secData.items.length) {
+                bodyHtml += `
+                  <table class="detail-table">
+                    <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+                    <tbody>
+                `;
+                secData.items.forEach(it => {
+                  bodyHtml += `
+                    <tr>
+                      <td>${escapeHtml(it.description || '')}</td>
+                      <td>${it.quantity ?? 1}</td>
+                      <td>${it.unit_price ? '$' + it.unit_price : '-'}</td>
+                      <td><strong>${it.total_price ? '$' + it.total_price : '-'}</strong></td>
+                    </tr>
+                  `;
+                });
+                bodyHtml += `</tbody></table>`;
+              }
+            }
+            // Deadline renderer
+            else if (catKey === 'deadline') {
+              bodyHtml += `
+                <div class="doc-field"><span class="doc-field__label">Event / Task:</span> <strong class="doc-field__value">${secData.title || 'N/A'}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Due Date:</span> <strong class="doc-field__value doc-field__value--urgent">${secData.due_date || 'N/A'} ${secData.due_time ? '(' + secData.due_time + ')' : ''}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Priority:</span> <span class="detail-flag-badge detail-flag-badge--${secData.priority || 'medium'}">${(secData.priority || 'medium').toUpperCase()}</span></div>
+                <div class="doc-field"><span class="doc-field__label">Issuer:</span> <span class="doc-field__value">${secData.issuer_or_organization || 'N/A'}</span></div>
+                <div style="margin-top:var(--space-2);"><span class="doc-field__label">Action Required:</span> <p style="font-size:var(--text-xs);margin:0;">${escapeHtml(secData.action_required || 'N/A')}</p></div>
+              `;
+            }
+            // Prescription renderer
+            else if (catKey === 'prescription') {
+              bodyHtml += `
+                <div class="doc-field"><span class="doc-field__label">Doctor:</span> <strong class="doc-field__value">${secData.doctor_name || 'N/A'}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Clinic / Hospital:</span> <span class="doc-field__value">${secData.clinic_hospital || 'N/A'}</span></div>
+                <div class="doc-field"><span class="doc-field__label">Patient:</span> <span class="doc-field__value">${secData.patient_name || 'N/A'}</span></div>
+              `;
+
+              if (secData.medications && secData.medications.length) {
+                bodyHtml += `<div style="margin-top:var(--space-2);font-weight:700;font-size:var(--text-xs);">Medications List:</div>`;
+                secData.medications.forEach(m => {
+                  bodyHtml += `
+                    <div style="background:var(--color-surface-muted);padding:var(--space-2);border-radius:var(--radius-sm);margin-top:var(--space-1);font-size:var(--text-xs);">
+                      <strong>💊 ${escapeHtml(m.name)}</strong> ${m.dosage ? '(' + escapeHtml(m.dosage) + ')' : ''}<br>
+                      <span>Frequency: ${escapeHtml(m.frequency || 'N/A')}</span> | <span>Duration: ${escapeHtml(m.duration || 'N/A')}</span><br>
+                      ${m.special_instructions ? '<i style="color:var(--color-text-secondary);">' + escapeHtml(m.special_instructions) + '</i>' : ''}
+                    </div>
+                  `;
+                });
+              }
+            }
+            // Lab report renderer
+            else if (catKey === 'labreport') {
+              bodyHtml += `
+                <div class="doc-field"><span class="doc-field__label">Diagnostic Lab:</span> <strong class="doc-field__value">${secData.lab_name || 'N/A'}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Report Date:</span> <span class="doc-field__value">${secData.report_date || 'N/A'}</span></div>
+              `;
+
+              if (secData.test_results && secData.test_results.length) {
+                bodyHtml += `
+                  <table class="detail-table">
+                    <thead><tr><th>Test Name</th><th>Result</th><th>Unit</th><th>Reference Range</th><th>Status</th></tr></thead>
+                    <tbody>
+                `;
+                secData.test_results.forEach(tr => {
+                  const flag = tr.status_flag || 'normal';
+                  bodyHtml += `
+                    <tr>
+                      <td>${escapeHtml(tr.test_name || '')}</td>
+                      <td><strong>${escapeHtml(tr.observed_value || '')}</strong></td>
+                      <td>${escapeHtml(tr.unit || '')}</td>
+                      <td>${escapeHtml(tr.reference_range || '')}</td>
+                      <td><span class="detail-flag-badge detail-flag-badge--${flag}">${flag.toUpperCase()}</span></td>
+                    </tr>
+                  `;
+                });
+                bodyHtml += `</tbody></table>`;
+              }
+            }
+            // Plan renderer
+            else if (catKey === 'plan') {
+              bodyHtml += `
+                <div class="doc-field"><span class="doc-field__label">Plan Title:</span> <strong class="doc-field__value">${secData.plan_title || 'N/A'}</strong></div>
+                <div class="doc-field"><span class="doc-field__label">Date:</span> <span class="doc-field__value">${secData.date || 'N/A'}</span></div>
+              `;
+
+              if (secData.action_items && secData.action_items.length) {
+                bodyHtml += `<div style="margin-top:var(--space-2);font-weight:700;font-size:var(--text-xs);">Action Items Checklist:</div>`;
+                secData.action_items.forEach(ai => {
+                  const done = ai.status === 'completed';
+                  bodyHtml += `
+                    <div style="display:flex;align-items:center;gap:var(--space-2);padding-block:var(--space-1);font-size:var(--text-xs);border-bottom:1px dashed var(--color-border);">
+                      <span>${done ? '✅' : '⏳'}</span>
+                      <strong style="${done ? 'text-decoration:line-through;color:var(--color-text-muted);' : ''}">${ai.step_number}. ${escapeHtml(ai.task)}</strong>
+                      ${ai.assigned_to ? '<span style="margin-left:auto;color:var(--color-text-muted);">[' + escapeHtml(ai.assigned_to) + ']</span>' : ''}
+                    </div>
+                  `;
+                });
+              }
+
+              if (secData.notes) {
+                bodyHtml += `<div style="margin-top:var(--space-2);font-size:var(--text-xs);"><strong>Notes:</strong> ${escapeHtml(secData.notes)}</div>`;
+              }
+            }
+
+            secEl.innerHTML = bodyHtml;
+            detailFieldsContainer.appendChild(secEl);
+          }
+        });
+
+        // Fallback for unformatted/flat JSON objects
+        if (!renderedSections) {
+          for (const [key, val] of Object.entries(ext)) {
+            if (val === null || val === undefined || val === '') continue;
+            const itemEl = document.createElement('div');
+            itemEl.className = 'doc-detail-item';
+            const formattedKey = key.replace(/_/g, ' ').toUpperCase();
+            const formattedVal = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+            itemEl.innerHTML = `
+              <span class="doc-detail-item__label">${formattedKey}</span>
+              <span class="doc-detail-item__value">${escapeHtml(formattedVal)}</span>
+            `;
+            detailFieldsContainer.appendChild(itemEl);
+          }
         }
       }
     }
@@ -501,6 +657,16 @@ document.addEventListener('DOMContentLoaded', () => {
     docDetailModal.style.display = 'flex';
     docDetailModal.classList.add('is-open');
     document.body.style.overflow = 'hidden';
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   function closeDocumentDetail() {
@@ -531,4 +697,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
