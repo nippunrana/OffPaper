@@ -4,13 +4,13 @@
 OffPaper is a web app where users photograph paper documents (bills, prescriptions, lab reports, deadlines, plans/notes), and the app automatically classifies them, generates a 10–20 word summary, and converts them into structured digital records. Users can also chat with an AI about any scanned document, and sync detected deadlines straight to Google Calendar.
 
 ## Status
-Active implementation. Working end-to-end: email/password + Google login, camera/file-upload capture, 2-pass Gemini AI pipeline, multi-category dashboard with filtering, per-document AI chat, Google Calendar sync for deadlines, and document deletion.
+Active implementation. Working end-to-end: email/password + Google login, camera/file-upload capture, 2-pass Gemini AI pipeline, multi-category dashboard with filtering, per-document AI chat (split-panel layout with plan finalisation), Google Calendar sync for deadlines, and document deletion.
 
 ## Tech Stack
 - **Backend:** Plain PHP (no framework, no build step).
 - **Database:** PostgreSQL (`offpapper` DB via PHP PDO `pdo_pgsql`).
 - **Frontend:** Vanilla HTML5, CSS, JS (no bundlers/frameworks).
-- **AI Engine:** Google Gemini REST API (`gemini-3.5-flash-lite`) via PHP cURL — the only AI provider used anywhere in this project (classification, extraction, and document chat).
+- **AI Engine:** Google Gemini REST API (`gemini-3.5-flash-lite`) via PHP cURL — the only AI provider used anywhere in this project (classification, extraction, document chat, and plan synthesis).
 
 ## Architecture & Request Flow
 - `public/` is the web docroot; `src/` and `views/` live outside it and are never web-reachable.
@@ -41,9 +41,31 @@ Implemented in `src/ai/document_upload/DocumentPipeline.php` + `DocumentSchemas.
 - **`plan`:** Plan title, date, sequential action items checklist, notes.
 
 ## Document AI Chat
-- `public/api/chat.php` — per-document Q&A. Loads the `user_uploads` row (auth + ownership checked), builds a system prompt (bullet-point, bolded-highlights style) plus a context block of the doc's summary/categories/`extracted_json`, re-attaches the original image file, and calls Gemini (`gemini-3.5-flash-lite`) fresh on every message.
-- Frontend: `views/chat_modal.php` + `public/assets/js/doc-chat.js`. The chat API endpoint URL is overridable via `window.OFFPAPER_CHAT_URL` (defaults to `api/chat.php`).
+- `public/api/chat.php` — per-document Q&A. Loads the `user_uploads` row (auth + ownership checked), builds a system prompt (bullet-point, bolded-highlights style) plus a context block of the doc's summary/categories/`extracted_json`, re-attaches the original image file, and calls Gemini (`gemini-3.5-flash-lite`) fresh on every message. GET requests return `chat_history`, `summary`, and `plan_snapshots` (from `extracted_json`).
+- **Modes:** normal chat or `plan_assist` (activated automatically for `plan`-type docs, or via `data-chat-mode="plan_assist"`). Plan assist uses a different system prompt focused on strengthening, questioning, and prioritising the plan.
+- Frontend: `views/chat_modal.php` + `public/assets/js/doc-chat.js` + `public/assets/css/chat.css`. The chat API endpoint URL is overridable via `window.OFFPAPER_CHAT_URL` (defaults to `api/chat.php`). The finalise endpoint is overridable via `window.OFFPAPER_CHAT_FINALISE_URL` (defaults to `api/chat_finalise_plan.php`).
 - **Note:** `chat.php` persists conversation history for **all document types** in `user_uploads_knowledgebase`. History is loaded on modal open and sent as context on subsequent messages. A `mode=clear_history` POST wipes history to support the "New Chat" button in the frontend.
+
+## Plan Finalisation ("Finalise the Plan" feature)
+Activated only in `plan_assist` mode (plan-type documents). Allows the user to synthesise the entire chat into a clean, versioned plan snapshot.
+
+**Trigger:** User types `"amazing, lets update the plan"` (case-insensitive, intercepted client-side before sending to chat API) OR clicks the green **Finalise** button in the chat input bar.
+
+**Flow:**
+1. `public/api/chat_finalise_plan.php` (POST `{ document_id, uuid }`) loads the full chat history from `user_uploads_knowledgebase`.
+2. Calls Gemini with a structured synthesis prompt → produces a markdown plan with `## 🎯 Goal`, `## ✅ Action Items`, `## 📅 Timeline`, `## ⚠️ Risks & Notes`, `## 💡 Next Steps` sections.
+3. Prepends the new snapshot `{ finalised_at, plan_text }` to `extracted_json->plan_snapshots` (max 3 kept, newest first, oldest dropped).
+4. Saves updated `extracted_json` to `user_uploads`, clears `chat_history` in `user_uploads_knowledgebase`.
+5. Returns `{ ok, plan_text, finalised_at, snapshot_count }`.
+
+**Frontend UI — Split-Panel Chat Modal:**
+- The modal is full-screen wide (max 1080px), 90vh tall, split into two panes:
+  - **Left pane (`.chat-pane`):** conversation, prompts, input bar with Finalise + Send buttons.
+  - **Right pane (`#docChatPlanPanel`, `.plan-panel`):** the finalised plan, scrollable, with heading-aware `formatPlanMarkdown()` rendering. Shown/hidden by toggling `.plan-panel--open` on `#docChatSplitBody`.
+- A **1-line green pill** (`#docChatPlanPill`) in the modal header reads "● Plan saved · [date]". Clicking it opens the right panel. It only appears when at least one snapshot exists.
+- **Version tabs** (`#planVersionTabs`) appear when 2–3 snapshots exist — click to switch between plan versions in the panel.
+- After finalising, a compact green card appears in chat saying "Plan finalised → View it in the panel →".
+- On modal open in `plan_assist` mode, the GET response from `chat.php` includes `plan_snapshots`; if any exist, the pill and panel are pre-populated automatically.
 
 ## Document Deletion
 - `public/api/delete_document.php` — CSRF-protected, ownership-checked. Deletes the associated Google Calendar event (if any), removes the file from `user-uploads/` on disk, then deletes the `user_uploads` row (cascades to `user_uploads_knowledgebase` via FK).
@@ -51,8 +73,8 @@ Implemented in `src/ai/document_upload/DocumentPipeline.php` + `DocumentSchemas.
 ## Database
 3 tables in PostgreSQL — see [`db/schema.sql`](db/schema.sql) and [`db/database_structure.md`](db/database_structure.md) for full column/index reference:
 - **`users`** — email/password auth + Google profile & OAuth tokens (`google_access_token`, `google_refresh_token`, `google_token_expires_at`) for offline Calendar access.
-- **`user_uploads`** — one row per scanned document: storage path, mime/size, `status` (`pending`/`processed`/`error`), `doc_type` (primary category), `extracted_json` (full pipeline output).
-- **`user_uploads_knowledgebase`** — schema exists for chat history/summary per document, not yet wired up (see Document AI Chat above).
+- **`user_uploads`** — one row per scanned document: storage path, mime/size, `status` (`pending`/`processed`/`error`), `doc_type` (primary category), `extracted_json` (full pipeline output). **`extracted_json` also holds `plan_snapshots: [{ finalised_at, plan_text }, ...]` (max 3, newest first)** for plan-type documents.
+- **`user_uploads_knowledgebase`** — `chat_history` (JSONB array of `{ role, text, ts }` turns) and `summary` per document. Fully wired; history persisted on every chat message, cleared on "New Chat" or after plan finalisation.
 
 ## Key Files Reference
 - [`public/document_ui_schemas.json`](public/document_ui_schemas.json) — frontend-facing copy of the extraction schemas (used for rendering the doc-detail modal's dynamic fields).
@@ -61,4 +83,9 @@ Implemented in `src/ai/document_upload/DocumentPipeline.php` + `DocumentSchemas.
 - [`src/ai/GeminiClient.php`](src/ai/GeminiClient.php) — low-level Gemini REST client.
 - [`public/upload.php`](public/upload.php) — capture/upload endpoint, triggers the AI pipeline.
 - [`public/dashboard.php`](public/dashboard.php) — main UI: stats, category filter tabs, document grid/cards, detail modal.
-- [`public/api/chat.php`](public/api/chat.php), [`public/api/add_to_calendar.php`](public/api/add_to_calendar.php), [`public/api/delete_document.php`](public/api/delete_document.php) — document-scoped JSON API endpoints.
+- [`public/api/chat.php`](public/api/chat.php) — document Q&A + history persistence; GET also returns `plan_snapshots`.
+- [`public/api/chat_finalise_plan.php`](public/api/chat_finalise_plan.php) — plan synthesis endpoint; stores versioned snapshots in `extracted_json`, clears chat.
+- [`public/api/add_to_calendar.php`](public/api/add_to_calendar.php), [`public/api/delete_document.php`](public/api/delete_document.php) — document-scoped JSON API endpoints.
+- [`views/chat_modal.php`](views/chat_modal.php) — split-panel chat modal HTML (left chat pane + right plan panel).
+- [`public/assets/js/doc-chat.js`](public/assets/js/doc-chat.js) — full chat controller: message sending, history loading, plan finalisation flow, pill/panel/version-tab wiring, `formatPlanMarkdown()`.
+- [`public/assets/css/chat.css`](public/assets/css/chat.css) — all chat modal styles; split-panel layout, plan pill, plan panel, version tabs, responsive collapse.
