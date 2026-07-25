@@ -446,6 +446,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailDeleteBtn = document.getElementById('detailDeleteDocBtn');
     if (detailDeleteBtn) detailDeleteBtn.setAttribute('data-doc-id', doc.id);
 
+    const categories = doc.categories || [doc.doc_type || 'plan'];
+    const isPlanDoc = categories.includes('plan');
+
+    // AI Plan Notes block handling (shown only for plan category docs with a saved summary)
+    const detailPlanNotesBlock = document.getElementById('detailPlanNotesBlock');
+    const detailPlanNotesText = document.getElementById('detailPlanNotesText');
+    if (detailPlanNotesBlock && detailPlanNotesText) {
+      if (isPlanDoc && doc.plan_summary) {
+        detailPlanNotesText.textContent = doc.plan_summary;
+        detailPlanNotesBlock.style.display = 'block';
+      } else {
+        detailPlanNotesBlock.style.display = 'none';
+      }
+    }
+
     // Calendar sync button in detail modal footer
     const hasDeadline = doc.extracted && doc.extracted.deadline;
     const deadlineData = hasDeadline ? doc.extracted.deadline : null;
@@ -503,7 +518,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Category Badges
-    const categories = doc.categories || [doc.doc_type || 'plan'];
     if (detailBadgesContainer) {
       detailBadgesContainer.innerHTML = '';
       categories.forEach(cat => {

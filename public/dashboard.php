@@ -25,9 +25,11 @@ $stats = [
 try {
     $db = db();
     $stmt = $db->prepare('
-        SELECT * FROM user_uploads 
-        WHERE user_id = :user_id 
-        ORDER BY created_at DESC
+        SELECT u.*, kb.summary AS plan_summary
+        FROM user_uploads u
+        LEFT JOIN user_uploads_knowledgebase kb ON kb.user_upload_id = u.id
+        WHERE u.user_id = :user_id 
+        ORDER BY u.created_at DESC
     ');
     $stmt->execute([':user_id' => $user['id']]);
     $rawUploads = $stmt->fetchAll();
@@ -321,6 +323,7 @@ require VIEWS . '/header.php';
                 'created_at' => $createdFormatted,
                 'status' => $status,
                 'summary' => $summary,
+                'plan_summary' => $doc['plan_summary'] ?? '',
                 'categories' => $cats,
                 'suggested_questions' => $doc['suggested_questions'] ?? [],
                 'extracted' => $ext,
@@ -504,6 +507,12 @@ require VIEWS . '/header.php';
           </div>
 
           <h3 id="detailDocHeading" class="doc-detail-heading">Document Title</h3>
+
+          <!-- AI Plan Notes Block (shown only for plan category docs with a saved summary) -->
+          <div id="detailPlanNotesBlock" class="doc-detail-summary-banner doc-detail-plan-notes-banner" style="display: none; background: #f0fdf4; border-left-color: #22c55e; color: #14532d; margin-top: var(--space-2); margin-bottom: var(--space-2);">
+            <strong style="color: #15803d; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-1); display: flex; align-items: center; gap: 4px;">📋 AI Plan Notes</strong>
+            <span id="detailPlanNotesText" style="display: block; line-height: 1.5;"></span>
+          </div>
 
           <!-- AI Summary Banner -->
           <div id="detailSummaryBanner" class="doc-detail-summary-banner">

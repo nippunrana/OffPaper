@@ -5,7 +5,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const chatModal = document.getElementById('docChatModal');
   const closeBtns = document.querySelectorAll('[data-close-doc-chat]');
-  
+
   const chatDocTitle = document.getElementById('chatDocTitle');
   const chatDocBadges = document.getElementById('chatDocBadges');
   const chatMessages = document.getElementById('docChatMessages');
@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const quickPromptsContainer = document.getElementById('chatQuickPrompts');
 
   let currentDocument = null;
+  let chatMode = null; // null for normal chat, 'plan_assist' for Improve Plan
+  let newMessageSentInSession = false;
 
   // Listen for open chat triggers on cards or detail modals
   document.addEventListener('click', (e) => {
@@ -28,7 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const doc = JSON.parse(rawData);
-      openChatModal(doc);
+      const categories = doc.categories || [doc.doc_type || 'plan'];
+      const explicitMode = trigger.getAttribute('data-chat-mode');
+      const mode = explicitMode || (categories.includes('plan') ? 'plan_assist' : null);
+      openChatModal(doc, mode);
     } catch (err) {
       console.error('Error parsing document data for chat:', err);
     }
@@ -84,8 +89,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function openChatModal(doc) {
+  function openChatModal(doc, mode = null) {
     currentDocument = doc;
+    chatMode = mode === 'plan_assist' ? 'plan_assist' : null;
+    newMessageSentInSession = false;
+
     if (!chatModal) return;
 
     // Reset previous state & messages
@@ -95,6 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sendBtn) sendBtn.disabled = true;
     }
     hideTyping();
+
+    // Update modal header title based on mode
+    const modalTitleEl = document.getElementById('chatModalTitle');
+    if (modalTitleEl) {
+      modalTitleEl.textContent = chatMode === 'plan_assist' ? 'Plan AI Assistant' : 'Document AI Assistant';
+    }
 
     // Populate header info
     const docTitleText = formatDocumentTitle(doc);
@@ -115,8 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Render dynamic category-aware suggested questions chips
-    renderQuickPrompts(doc);
+    // Render suggested prompts & initial greeting
+    if (chatMode === 'plan_assist') {
+      renderPlanAssistPrompts();
+      renderPlanAssistGreeting(doc, docTitleText);
+      loadExistingChatHistory(doc);
+    } else {
+      renderQuickPrompts(doc);
+      renderInitialGreeting(doc, docTitleText);
+    }
 
     // Show modal
     chatModal.style.display = 'flex';
@@ -124,9 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
       chatModal.classList.add('is-open');
     });
     document.body.style.overflow = 'hidden';
-
-    // Render initial AI greeting message
-    renderInitialGreeting(doc, docTitleText);
 
     // Focus input field
     setTimeout(() => {
@@ -137,10 +155,31 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeChatModal() {
     if (!chatModal) return;
     chatModal.classList.remove('is-open');
+
+    // Fire chat_finalize.php if closing plan_assist session with new messages
+    if (chatMode === 'plan_assist' && newMessageSentInSession && currentDocument) {
+      const finalizeUrl = window.OFFPAPER_CHAT_FINALIZE_URL || 'api/chat_finalize.php';
+      fetch(finalizeUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          document_id: currentDocument.id || 0,
+          uuid: currentDocument.uuid || ''
+        })
+      }).catch(err => console.error('Chat finalize request error:', err));
+    }
+
     setTimeout(() => {
       chatModal.style.display = 'none';
       document.body.style.overflow = '';
       currentDocument = null;
+      chatMode = null;
+      newMessageSentInSession = false;
+      const modalTitleEl = document.getElementById('chatModalTitle');
+      if (modalTitleEl) modalTitleEl.textContent = 'Document AI Assistant';
     }, 250);
   }
 
@@ -155,6 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function sendUserMessage(text) {
+    newMessageSentInSession = true;
+
     appendMessage({
       sender: 'user',
       text: text,
@@ -184,7 +225,8 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({
           document_id: currentDocument.id || 0,
           uuid: currentDocument.uuid || '',
-          message: text
+          message: text,
+          mode: chatMode || ''
         })
       });
 
@@ -220,6 +262,45 @@ document.addEventListener('DOMContentLoaded', () => {
         html: '<p>⚠️ Connection error. Please try again.</p>',
         time: getCurrentTimeFormatted()
       });
+    }
+  }
+
+  async function loadExistingChatHistory(doc) {
+    try {
+      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const docId = doc.id || 0;
+      const uuid = doc.uuid || '';
+      const fetchUrl = `${chatApiUrl}?document_id=${docId}&uuid=${encodeURIComponent(uuid)}&mode=plan_assist`;
+
+      const response = await fetch(fetchUrl, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.ok && Array.isArray(data.chat_history) && data.chat_history.length > 0) {
+        if (chatMessages) chatMessages.innerHTML = '';
+        data.chat_history.forEach(turn => {
+          const sender = (turn.role === 'user') ? 'user' : 'ai';
+          const text = turn.text || '';
+          const time = turn.ts ? new Date(turn.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : getCurrentTimeFormatted();
+          if (sender === 'ai') {
+            appendMessage({
+              sender: 'ai',
+              html: formatMarkdownResponse(text),
+              time: time
+            });
+          } else {
+            appendMessage({
+              sender: 'user',
+              text: text,
+              time: time
+            });
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error loading existing chat history:', err);
     }
   }
 
@@ -292,6 +373,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function renderPlanAssistGreeting(doc, title) {
+    const summary = doc.summary ? `“${escapeHtml(doc.summary)}”` : '';
+    let greetingHtml = `<p>Hello! I'm your Plan AI Assistant for <strong>${escapeHtml(title)}</strong>.</p>`;
+    if (summary) {
+      greetingHtml += `<p class="doc-card__summary" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">${summary}</p>`;
+    }
+    greetingHtml += `<p style="font-size: 0.85rem; color: var(--color-text-secondary);">I can help you analyze, prioritize, identify risks, and add missing action items to strengthen this plan.</p>`;
+
+    appendMessage({
+      sender: 'ai',
+      html: greetingHtml,
+      time: getCurrentTimeFormatted()
+    });
+  }
+
+  function renderPlanAssistPrompts() {
+    if (!quickPromptsContainer) return;
+    quickPromptsContainer.innerHTML = '';
+
+    const planPrompts = [
+      "What's missing from this plan?",
+      "Any risks I should plan for?",
+      "Help me prioritize these steps"
+    ];
+
+    planPrompts.forEach((promptText) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chat-chip';
+      chip.setAttribute('data-prompt', promptText);
+      chip.innerHTML = `<span>📋</span> ${escapeHtml(promptText)}`;
+      quickPromptsContainer.appendChild(chip);
+    });
+  }
+
   function appendMessage({ sender, text, html, time }) {
     if (!chatMessages) return;
 
@@ -345,8 +461,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-
-
   // Helper functions
   function formatDocumentTitle(doc) {
     const ext = doc.extracted || {};
@@ -376,10 +490,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function getCurrentTimeFormatted() {
     const now = new Date();
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  function numberFormat(num) {
-    return parseFloat(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function capitalize(str) {
