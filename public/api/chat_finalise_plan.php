@@ -109,6 +109,9 @@ RULES:
 4. Use **bold** for key terms, dates, and priorities.
 5. Be concise but complete. Every point should be directly traceable to the conversation.
 6. Do NOT add fluff, disclaimers, or preamble. Output only the structured plan.
+7. After the full plan, output this marker on its own line:
+   ---GREETING---
+   Then write ONE warm sentence (max 25 words) welcoming the user back to continue refining this specific plan. Reference the plan's central goal directly. No opener like "Welcome back" or "Here is".
 EOT;
 
     $userPrompt  = "TODAY'S DATE: " . date('Y-m-d') . "\n\n";
@@ -140,12 +143,22 @@ EOT;
         exit;
     }
 
+    // Split plan text and greeting on the ---GREETING--- delimiter
+    $greeting = '';
+    $delimiter = '---GREETING---';
+    if (str_contains($planText, $delimiter)) {
+        [$planText, $greetingRaw] = explode($delimiter, $planText, 2);
+        $planText = trim($planText);
+        $greeting = trim($greetingRaw);
+    }
+
     $finalisedAt = date('c'); // ISO 8601
 
-    // Build new snapshot entry
+    // Build new snapshot entry (includes greeting for contextual re-entry message)
     $newSnapshot = [
         'finalised_at' => $finalisedAt,
         'plan_text'    => $planText,
+        'greeting'     => $greeting,
     ];
 
     // Load existing snapshots from extracted_json, prepend new one, keep max 3
@@ -174,9 +187,10 @@ EOT;
     )->execute(['upload_id' => (int)$doc['id'], 'user_id' => $userId]);
 
     echo json_encode([
-        'ok'           => true,
-        'plan_text'    => $planText,
-        'finalised_at' => $finalisedAt,
+        'ok'             => true,
+        'plan_text'      => $planText,
+        'finalised_at'   => $finalisedAt,
+        'greeting'       => $greeting,
         'snapshot_count' => count($snapshots),
     ]);
 

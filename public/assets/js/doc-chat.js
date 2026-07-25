@@ -143,15 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Render suggested prompts & initial greeting, then load history
+    // Render suggested prompts, then load everything in one shot for plan_assist
     if (chatMode === 'plan_assist') {
       renderPlanAssistPrompts();
-      renderPlanAssistGreeting(doc, docTitleText);
+      // greeting + history + snapshot handled together in loadPlanAssistSession
     } else {
       renderQuickPrompts(doc);
       renderInitialGreeting(doc, docTitleText);
+      loadExistingChatHistory(doc);
     }
-    loadExistingChatHistory(doc);
 
     // Show New Chat button only when there's saved history to clear
     if (newChatBtn) newChatBtn.style.display = 'none';
@@ -166,9 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
     allPlanSnapshots = [];
     if (planPill) planPill.style.display = 'none';
 
-    // If plan_assist, load plan snapshots
+    // For plan_assist: one async call handles greeting, history, and snapshot
     if (chatMode === 'plan_assist') {
-      loadPlanSnapshot(doc);
+      loadPlanAssistSession(doc, docTitleText);
     }
 
     // Show modal
@@ -451,6 +451,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load snapshots from API and populate pill + panel
   async function loadPlanSnapshot(doc) {
+    // This function is kept for non-plan-assist snapshot refreshes.
+    // plan_assist mode uses loadPlanAssistSession instead.
     try {
       const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
       const docId = doc.id || 0;
@@ -475,6 +477,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.error('Error loading plan snapshot:', err);
+    }
+  }
+
+  // One-shot loader for plan_assist mode:
+  // fetches history + snapshots in one request, renders greeting then history in correct order
+  async function loadPlanAssistSession(doc, docTitleText) {
+    try {
+      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const docId = doc.id || 0;
+      const uuid  = doc.uuid || '';
+      const fetchUrl = `${chatApiUrl}?document_id=${docId}&uuid=${encodeURIComponent(uuid)}`;
+
+      const res = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' } });
+
+      // On fetch failure fall back to generic greeting only
+      if (!res.ok) {
+        renderPlanAssistGreeting(doc, docTitleText);
+        return;
+      }
+
+      const data = await res.json();
+      if (!data.ok) {
+        renderPlanAssistGreeting(doc, docTitleText);
+        return;
+      }
+
+      const snapshots   = Array.isArray(data.plan_snapshots) ? data.plan_snapshots : [];
+      const chatHistory = Array.isArray(data.chat_history)   ? data.chat_history   : [];
+      const latest      = snapshots[0] || null;
+
+      // ── Greeting (must be first message) ─────────────────────────────
+      if (latest && latest.greeting) {
+        // Contextual greeting generated at finalisation time
+        const greetHtml = `
+          <p>${escapeHtml(latest.greeting)}</p>
+          <p style="font-size:0.82rem; color:var(--color-text-muted); margin-top:0.4rem;">
+            Your latest plan is saved — tap <strong>Plan saved</strong> above to view it, or keep chatting to refine further.
+          </p>`;
+        appendMessage({ sender: 'ai', html: greetHtml, time: getCurrentTimeFormatted() });
+      } else {
+        // No snapshot yet — use the generic plan_assist greeting
+        renderPlanAssistGreeting(doc, docTitleText);
+      }
+
+      // ── Existing chat history ─────────────────────────────────────────
+      if (chatHistory.length > 0) {
+        chatHistory.forEach(turn => {
+          const sender = turn.role === 'user' ? 'user' : 'ai';
+          const text   = turn.text || '';
+          const time   = turn.ts
+            ? new Date(turn.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : getCurrentTimeFormatted();
+          if (sender === 'ai') {
+            appendMessage({ sender: 'ai', html: formatMarkdownResponse(text), time });
+          } else {
+            appendMessage({ sender: 'user', text, time });
+          }
+        });
+        if (newChatBtn) newChatBtn.style.display = 'inline-flex';
+      }
+
+      // ── Plan snapshot panel + pill ────────────────────────────────────
+      if (snapshots.length > 0) {
+        allPlanSnapshots = snapshots;
+        updatePlanPill(latest.finalised_at);
+        showPlanInPanel(latest.plan_text, latest.finalised_at, 0);
+        renderVersionTabs(snapshots, 0);
+        openPlanPanel(); // auto-open: user can close with the ← button
+      }
+
+    } catch (err) {
+      console.error('Error loading plan assist session:', err);
+      renderPlanAssistGreeting(doc, docTitleText);
     }
   }
 
