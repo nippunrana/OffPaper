@@ -30,7 +30,7 @@ $user = current_user();
 <link rel="stylesheet" href="<?= asset('css/' . e($file)) ?>">
 <?php endforeach; ?>
 </head>
-<body class="<?= e($body_class) ?>" data-upload-url="<?= url('/upload.php') ?>" data-calendar-url="<?= url('/api/add_to_calendar.php') ?>">
+<body class="<?= e($body_class) ?>" data-upload-url="<?= url('/upload.php') ?>" data-calendar-url="<?= url('/api/add_to_calendar.php') ?>" data-delete-url="<?= url('/api/delete_document.php') ?>">
 <a class="skip-link" href="#main">Skip to content</a>
 
 <header class="site-header">

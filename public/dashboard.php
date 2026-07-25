@@ -309,8 +309,14 @@ require VIEWS . '/header.php';
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
           ?>
 
-          <article class="doc-card" data-categories="<?= e($catsAttr) ?>">
+          <article class="doc-card" data-doc-id="<?= (int)$doc['id'] ?>" data-categories="<?= e($catsAttr) ?>">
             <div class="doc-card__thumbnail">
+              <button type="button" class="doc-card__delete-btn btn-delete-doc" data-doc-id="<?= (int)$doc['id'] ?>" title="Delete document" aria-label="Delete document">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
               <img src="<?= e($imgUrl) ?>" alt="<?= e($docTitle) ?>" loading="lazy">
               <div class="doc-card__badges">
                 <?php foreach ($cats as $cat): ?>
@@ -514,6 +520,15 @@ require VIEWS . '/header.php';
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
               In Google Calendar
             </a>
+            <button type="button" id="detailDeleteDocBtn" class="btn btn--danger-ghost btn--sm btn-delete-doc" data-doc-id="" style="margin-left: auto;">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              Delete Document
+            </button>
           </div>
         </div>
       </div>

@@ -205,6 +205,29 @@
   background: var(--color-surface-sunken);
 }
 
+.btn--danger {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.btn--danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.btn--danger-ghost {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+.btn--danger-ghost:hover {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.45);
+  color: #b91c1c;
+}
+
 .btn--calendar {
   background: #4285f4;
   color: #ffffff;

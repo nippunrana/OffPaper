@@ -443,6 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (detailDocDate) detailDocDate.textContent = doc.created_at || '';
     if (detailDownloadLink) detailDownloadLink.href = doc.file_path || '#';
     if (detailDocChatBtn) detailDocChatBtn.setAttribute('data-open-doc-chat', JSON.stringify(doc));
+    const detailDeleteBtn = document.getElementById('detailDeleteDocBtn');
+    if (detailDeleteBtn) detailDeleteBtn.setAttribute('data-doc-id', doc.id);
 
     // Calendar sync button in detail modal footer
     const hasDeadline = doc.extracted && doc.extracted.deadline;
@@ -868,4 +870,122 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('An unexpected error occurred while adding to Google Calendar.');
     }
   });
+
+  // --- DELETE DOCUMENT ACTION HANDLER ---
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-delete-doc');
+    if (!btn) return;
+    e.preventDefault();
+
+    const docId = btn.getAttribute('data-doc-id');
+    if (!docId) return;
+
+    if (!confirm('Are you sure you want to delete this document?\n\nThis will permanently remove the uploaded image, extracted AI records, conversation history, and calendar integration.')) {
+      return;
+    }
+
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `⏳ Deleting...`;
+
+    const targetDeleteUrl = document.body.dataset.deleteUrl || 'api/delete_document.php';
+
+    try {
+      const resp = await fetch(targetDeleteUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({ document_id: docId, csrf: csrfToken })
+      });
+
+      const responseText = await resp.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error('Failed to parse delete response as JSON:', responseText);
+        throw new Error(`Server returned HTTP ${resp.status}`);
+      }
+
+      if (data.ok) {
+        // Close document detail modal if open
+        closeDocumentDetail();
+
+        // Animate and remove matching card elements from DOM
+        const matchingCards = document.querySelectorAll(`.doc-card[data-doc-id="${docId}"]`);
+        matchingCards.forEach(card => {
+          card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            card.remove();
+            updateDashboardStatsAfterDeletion();
+          }, 250);
+        });
+
+        if (matchingCards.length === 0) {
+          updateDashboardStatsAfterDeletion();
+        }
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+        alert(data.error || 'Failed to delete document.');
+      }
+    } catch (err) {
+      console.error('Document deletion error:', err);
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+      alert('An unexpected error occurred while deleting the document.');
+    }
+  });
+
+  function updateDashboardStatsAfterDeletion() {
+    const allCards = document.querySelectorAll('.doc-card');
+    const totalCount = allCards.length;
+
+    if (totalCount === 0) {
+      window.location.reload();
+      return;
+    }
+
+    const counts = { total: totalCount, bills: 0, deadline: 0, prescription: 0, labreport: 0, plan: 0 };
+    allCards.forEach(card => {
+      const catsAttr = card.getAttribute('data-categories') || '';
+      const cats = catsAttr.split(',').map(s => s.trim()).filter(Boolean);
+      cats.forEach(cat => {
+        if (counts[cat] !== undefined) counts[cat]++;
+      });
+    });
+
+    document.querySelectorAll('.dash-tab').forEach(tab => {
+      const filter = tab.getAttribute('data-filter');
+      const countSpan = tab.querySelector('.dash-tab__count');
+      if (filter === 'all') {
+        if (countSpan) countSpan.textContent = counts.total;
+      } else if (counts[filter] !== undefined) {
+        if (countSpan) countSpan.textContent = counts[filter];
+        if (counts[filter] === 0) {
+          const li = tab.closest('li');
+          if (li) li.remove();
+        }
+      }
+    });
+
+    document.querySelectorAll('.dash-stat-card').forEach(statCard => {
+      const labelEl = statCard.querySelector('.dash-stat-card__label');
+      const valEl = statCard.querySelector('.dash-stat-card__value');
+      if (labelEl && valEl) {
+        const txt = labelEl.textContent.trim().toLowerCase();
+        if (txt === 'total') valEl.textContent = counts.total;
+        else if (txt === 'bills') valEl.textContent = counts.bills;
+        else if (txt === 'deadlines') valEl.textContent = counts.deadline;
+        else if (txt === 'prescriptions') valEl.textContent = counts.prescription;
+        else if (txt === 'lab reports') valEl.textContent = counts.labreport;
+        else if (txt === 'plans') valEl.textContent = counts.plan;
+      }
+    });
+  }
 });
