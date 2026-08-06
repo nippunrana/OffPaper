@@ -74,7 +74,7 @@ if (!$d || !is_array($d)) {
     exit;
 }
 
-$title = !empty($d['title']) ? $d['title'] : (!empty($d['vendor_name']) ? $d['vendor_name'] . ' Payment Due' : 'OffPaper Deadline Notice');
+$title = !empty($d['title']) ? $d['title'] : (!empty($d['vendor_name']) ? $d['vendor_name'] . ' Payment Due' : 'EarlySnap Deadline Notice');
 $dueDate = !empty($d['due_date']) ? trim($d['due_date']) : (!empty($d['payment_due_date']) ? trim($d['payment_due_date']) : '');
 $dueTime = !empty($d['due_time']) ? trim($d['due_time']) : '';
 $priority = !empty($d['priority']) ? strtoupper($d['priority']) : '';
@@ -107,7 +107,7 @@ if ($dueCheckTs !== false && $dueCheckTs < time()) {
 }
 
 // Build event description
-$descParts = ["OffPaper Deadline Record"];
+$descParts = ["EarlySnap Deadline Record"];
 if (!empty($issuer)) {
     $descParts[] = "Issuer: " . $issuer;
 }

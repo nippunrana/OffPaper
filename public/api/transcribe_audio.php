@@ -1,6 +1,6 @@
 <?php
 /**
- * OffPaper — Speech-To-Text API Endpoint
+ * EarlySnap — Speech-To-Text API Endpoint
  *
  * Transcribes recorded voice audio clips using Gemini 3.5 Flash Lite multimodal audio processing.
  */

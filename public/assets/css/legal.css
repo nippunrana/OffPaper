@@ -1,0 +1,59 @@
+/* ==========================================================================
+   LEGAL — Privacy Policy / Terms of Service prose pages
+   ========================================================================== */
+
+.legal {
+  padding-block: var(--space-9) var(--space-12);
+}
+
+.legal__container {
+  max-width: 42rem;
+}
+
+.legal h1 {
+  font-size: var(--text-3xl);
+  margin-bottom: var(--space-3);
+}
+
+.legal__updated {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-9);
+}
+
+.legal h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--color-text-primary);
+  margin-top: var(--space-9);
+  margin-bottom: var(--space-3);
+}
+
+.legal p,
+.legal li {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.legal p {
+  margin-bottom: var(--space-4);
+}
+
+.legal ul,
+.legal ol {
+  padding-left: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+.legal li {
+  margin-bottom: var(--space-2);
+}
+
+.legal a {
+  color: var(--color-accent-text);
+  text-decoration: underline;
+}
+
+.legal strong {
+  color: var(--color-text-primary);
+}

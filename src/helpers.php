@@ -14,24 +14,7 @@ function base_path(): string
     }
 
     $envPath = env('APP_BASE_PATH');
-    if ($envPath !== null) {
-        $base = rtrim($envPath, '/');
-        return $base;
-    }
-
-    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-    if (preg_match('#^(.*?/offpaper)#', $scriptName, $m)) {
-        $base = $m[1];
-        return $base;
-    }
-
-    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-    if (preg_match('#^(.*?/offpaper)#', strtok($requestUri, '?'), $m)) {
-        $base = $m[1];
-        return $base;
-    }
-
-    $base = '';
+    $base = $envPath !== null ? rtrim($envPath, '/') : '';
     return $base;
 }
 

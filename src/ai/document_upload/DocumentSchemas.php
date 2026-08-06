@@ -1,6 +1,6 @@
 <?php
 /**
- * OffPaper — Multi-Category Document Schemas & System Prompts
+ * EarlySnap — Multi-Category Document Schemas & System Prompts
  * 
  * Provides declarative prompts and strict JSON schemas for Gemini model responses
  * supporting multi-category document processing (prescription, labreport, plan, bills, deadline).
@@ -30,7 +30,7 @@ class DocumentSchemas
     {
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => "You are an expert document classification engine for OffPaper. Analyze the provided image of a paper document, receipt, or handwritten note, identify all applicable categories it belongs to, and generate a concise summary. Read ONLY what is visible in the image.\n\n" . $dateContext,
+            'systemInstruction' => "You are an expert document classification engine for EarlySnap. Analyze the provided image of a paper document, receipt, or handwritten note, identify all applicable categories it belongs to, and generate a concise summary. Read ONLY what is visible in the image.\n\n" . $dateContext,
             'prompt' => 'Analyze this document image. Determine which of the target categories apply: prescription, labreport, plan, bills, deadline. A single document MAY belong to multiple categories simultaneously. IMPORTANT: 1. If this document is a prescription, medical note, or handwritten doctor sheet AND mentions any follow-up visit, appointment date, refill deadline, or future timeframe (whether in handwriting or print, e.g. "follow up after 2 weeks", "visit in 10 days", "refill by August 15", "appointment on..."), you MUST include the "deadline" category in addition to "prescription". 2. If this document is a bill, invoice, or receipt AND mentions any payment due date or due phrase (e.g. "payment due by Aug 30", "due in 15 days", "pay within 30 days"), you MUST include the "deadline" category in addition to "bills". Write a summary of the document in EXACTLY 10 to 20 words. If a date or appointment schedule is mentioned, resolve it to an explicit calendar date based on the document date or current system date.',
             'responseSchema' => [
                 'type' => 'object',
@@ -64,7 +64,7 @@ class DocumentSchemas
     {
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => "You are a high-precision invoice and receipt parser for OffPaper. Extract vendor details, line items, prices, tax, total amounts, and payment due dates from the document image. Read ONLY visible text. Do NOT estimate prices or assume currency symbols.\n\n" . $dateContext,
+            'systemInstruction' => "You are a high-precision invoice and receipt parser for EarlySnap. Extract vendor details, line items, prices, tax, total amounts, and payment due dates from the document image. Read ONLY visible text. Do NOT estimate prices or assume currency symbols.\n\n" . $dateContext,
             'prompt' => 'Extract all bill/invoice details: vendor name, bill date, invoice number, currency (ONLY if explicitly written on document image e.g. $, €, £, ₹, USD; return null if no currency symbol or code is written), itemized line items (description, quantity, unit price, total price), subtotal, tax, grand total, and payment due date (resolve any relative due phrase like "due in 15 days", "pay within 30 days" into an absolute YYYY-MM-DD date based on bill date or current system date).',
             'responseSchema' => [
                 'type' => 'object',
@@ -104,7 +104,7 @@ class DocumentSchemas
     {
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => "You are a time-sensitive task, bill payment due date, doctor appointment, and deadline extractor for OffPaper. Extract key date commitments, payment due dates, submission deadlines, doctor follow-up appointments, handwritten prescription visit dates, and appointment schedules from the document image.\n\n" . $dateContext,
+            'systemInstruction' => "You are a time-sensitive task, bill payment due date, doctor appointment, and deadline extractor for EarlySnap. Extract key date commitments, payment due dates, submission deadlines, doctor follow-up appointments, handwritten prescription visit dates, and appointment schedules from the document image.\n\n" . $dateContext,
             'prompt' => 'Extract all deadline, appointment, and bill payment details from this document (including bill/invoice payment due dates, vendor deadlines, doctor follow-up dates, handwritten appointment notes on prescriptions, or submission deadlines): title/event (e.g., "Vendor Payment Due", "Doctor Follow-up", "Prescription Refill", or deadline title), due date (resolve any relative phrase like "due in 15 days", "follow up in 2 weeks", "visit after 10 days", "today", "tomorrow" into an absolute YYYY-MM-DD date based on document/bill/prescription writing date or current system date), due time, priority, issuer or organization (e.g., vendor name, prescribing doctor, clinic name, or issuing organization), and action required (e.g., "Pay bill invoice", "Follow up appointment with doctor", "Submit payment").',
             'responseSchema' => [
                 'type' => 'object',
@@ -129,7 +129,7 @@ class DocumentSchemas
     {
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => "You are a specialized medical prescription digitizer for OffPaper. Extract doctor details, patient info, and prescribed medications accurately from the document image. Ground all extractions strictly in the source text.\n\n" . $dateContext,
+            'systemInstruction' => "You are a specialized medical prescription digitizer for EarlySnap. Extract doctor details, patient info, and prescribed medications accurately from the document image. Ground all extractions strictly in the source text.\n\n" . $dateContext,
             'prompt' => 'Extract patient details, prescribing doctor name, clinic/hospital name, prescription date (prescription/visit date in YYYY-MM-DD format), and all prescribed medications (name, dosage, frequency, duration, special instructions). If handwritten or typed notes mention follow-up visits, doctor appointments, or durations (e.g., "visit after 10 days", "follow up in 2 weeks"), calculate absolute dates from the prescription/visit date.',
             'responseSchema' => [
                 'type' => 'object',
@@ -166,7 +166,7 @@ class DocumentSchemas
     {
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => "You are a diagnostic lab report extraction engine for OffPaper. Extract test panel results, numerical values, units, reference ranges, and status flags from the document image. Do NOT calculate or modify values — record only what is visible.\n\n" . $dateContext,
+            'systemInstruction' => "You are a diagnostic lab report extraction engine for EarlySnap. Extract test panel results, numerical values, units, reference ranges, and status flags from the document image. Do NOT calculate or modify values — record only what is visible.\n\n" . $dateContext,
             'prompt' => 'Extract diagnostic lab report details: lab name, report date (YYYY-MM-DD format), patient name, and all test results (test name, observed value, unit, reference range, status flag).',
             'responseSchema' => [
                 'type' => 'object',
@@ -202,7 +202,7 @@ class DocumentSchemas
     {
         $dateContext = self::getSystemDateContext($referenceDate);
         return [
-            'systemInstruction' => "You are an actionable plan and task list parser for OffPaper. Extract goals, step-by-step action items, assignees, and notes from handwritten or typed document notes.\n\n" . $dateContext,
+            'systemInstruction' => "You are an actionable plan and task list parser for EarlySnap. Extract goals, step-by-step action items, assignees, and notes from handwritten or typed document notes.\n\n" . $dateContext,
             'prompt' => 'Extract action plan details: plan title, note date (resolve relative phrases like "today", "after 5 days" into absolute YYYY-MM-DD date based on document writing date or current system date), sequential action items (step number, task description, assigned to, status), and extra notes.',
             'responseSchema' => [
                 'type' => 'object',
@@ -263,7 +263,7 @@ class DocumentSchemas
         $extractedJsonStr = json_encode($extractedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         $systemInstruction = <<<EOT
-You are an expert document intelligence prompt designer for OffPaper. Your goal is to analyze the document image and its extracted data, and generate top 3 highly specific, document-grounded questions that will amaze the user with their precise accuracy.
+You are an expert document intelligence prompt designer for EarlySnap. Your goal is to analyze the document image and its extracted data, and generate top 3 highly specific, document-grounded questions that will amaze the user with their precise accuracy.
 
 CRITICAL INSTRUCTION — MAKE QUESTIONS DEEPLY SPECIFIC (NOT GENERIC):
 Every generated question MUST explicitly mention actual entities extracted from this document — such as specific vendor names, item descriptions, values, medication names, doctor/clinic names, test panel names, deadline titles, or task names!

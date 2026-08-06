@@ -10,11 +10,13 @@ $page_js = $page_js ?? [];
 
 <footer class="site-footer">
   <div class="container site-footer__inner">
-    <p>&copy; <?= date('Y') ?> OffPaper. Get your life off paper.</p>
+    <p>&copy; <?= date('Y') ?> EarlySnap. Get your life off paper.</p>
     <ul class="site-footer__links">
       <li><a href="<?= url('/') ?>">Home</a></li>
       <li><a href="<?= url('/login.php') ?>">Log in</a></li>
       <li><a href="<?= url('/login.php?mode=signup') ?>">Get started</a></li>
+      <li><a href="<?= url('/privacy.php') ?>">Privacy Policy</a></li>
+      <li><a href="<?= url('/terms.php') ?>">Terms of Service</a></li>
     </ul>
   </div>
 </footer>

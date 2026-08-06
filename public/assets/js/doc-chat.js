@@ -1,5 +1,5 @@
 /**
- * OffPaper Document AI Chat Controller
+ * EarlySnap Document AI Chat Controller
  * Manages frontend UI interactions for chatting with AI about specific paper documents.
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
       micBtn.title = 'Transcribing with Gemini Flash Lite...';
     }
 
-    const transcribeUrl = window.OFFPAPER_TRANSCRIBE_URL || 'api/transcribe_audio.php';
+    const transcribeUrl = window.EARLYSNAP_TRANSCRIBE_URL || 'api/transcribe_audio.php';
     const formData = new FormData();
     formData.append('audio', audioBlob, 'speech.webm');
 
@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Fire chat_finalize.php if closing plan_assist session with new messages
     if (chatMode === 'plan_assist' && newMessageSentInSession && currentDocument) {
-      const finalizeUrl = window.OFFPAPER_CHAT_FINALIZE_URL || 'api/chat_finalize.php';
+      const finalizeUrl = window.EARLYSNAP_CHAT_FINALIZE_URL || 'api/chat_finalize.php';
       fetch(finalizeUrl, {
         method: 'POST',
         headers: {
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const chatApiUrl = window.EARLYSNAP_CHAT_URL || 'api/chat.php';
       const response = await fetch(chatApiUrl, {
         method: 'POST',
         headers: {
@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function clearChatHistory() {
     if (!currentDocument) return;
     try {
-      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const chatApiUrl = window.EARLYSNAP_CHAT_URL || 'api/chat.php';
       const res = await fetch(chatApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const url = window.OFFPAPER_CHAT_FINALISE_URL || 'api/chat_finalise_plan.php';
+      const url = window.EARLYSNAP_CHAT_FINALISE_URL || 'api/chat_finalise_plan.php';
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -611,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // This function is kept for non-plan-assist snapshot refreshes.
     // plan_assist mode uses loadPlanAssistSession instead.
     try {
-      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const chatApiUrl = window.EARLYSNAP_CHAT_URL || 'api/chat.php';
       const docId = doc.id || 0;
       const uuid  = doc.uuid || '';
       const fetchUrl = `${chatApiUrl}?document_id=${docId}&uuid=${encodeURIComponent(uuid)}`;
@@ -641,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // fetches history + snapshots in one request, renders greeting then history in correct order
   async function loadPlanAssistSession(doc, docTitleText) {
     try {
-      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const chatApiUrl = window.EARLYSNAP_CHAT_URL || 'api/chat.php';
       const docId = doc.id || 0;
       const uuid  = doc.uuid || '';
       const fetchUrl = `${chatApiUrl}?document_id=${docId}&uuid=${encodeURIComponent(uuid)}`;
@@ -790,7 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadExistingChatHistory(doc) {
     try {
-      const chatApiUrl = window.OFFPAPER_CHAT_URL || 'api/chat.php';
+      const chatApiUrl = window.EARLYSNAP_CHAT_URL || 'api/chat.php';
       const docId = doc.id || 0;
       const uuid = doc.uuid || '';
       const fetchUrl = `${chatApiUrl}?document_id=${docId}&uuid=${encodeURIComponent(uuid)}`;
@@ -931,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const summary = doc.summary ? `“${escapeHtml(doc.summary)}”` : '';
     const cats = (doc.categories || []).map(c => capitalize(c)).join(', ');
 
-    let greetingHtml = `<p>Hello! I'm your OffPaper AI assistant for <strong>${escapeHtml(title)}</strong>.</p>`;
+    let greetingHtml = `<p>Hello! I'm your EarlySnap AI assistant for <strong>${escapeHtml(title)}</strong>.</p>`;
     if (summary) {
       greetingHtml += `<p class="doc-card__summary" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">${summary}</p>`;
     }

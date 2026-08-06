@@ -1,6 +1,6 @@
 <?php
 /**
- * OffPaper — AI Helper Entrypoint
+ * EarlySnap — AI Helper Entrypoint
  * 
  * Includes Gemini client, schemas, and pipeline, providing procedural helper functions.
  */

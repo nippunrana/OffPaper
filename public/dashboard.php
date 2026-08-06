@@ -152,7 +152,7 @@ require VIEWS . '/header.php';
           </svg>
         </span>
         <h2>Scan your first document</h2>
-        <p>Photograph a bill, prescription, lab report, plan, or deadline notice, and OffPaper will automatically classify and turn it into actionable data.</p>
+        <p>Photograph a bill, prescription, lab report, plan, or deadline notice, and EarlySnap will automatically classify and turn it into actionable data.</p>
         <button type="button" class="btn btn--primary btn--lg" data-open-scan-modal>Scan a document</button>
       </div>
 

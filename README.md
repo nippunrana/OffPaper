@@ -1,7 +1,7 @@
-# OffPaper
+# EarlySnap
 
 Snap a photo of any paper — a bill, a prescription, a lab report, a
-handwritten plan — and OffPaper classifies it, summarizes it, and turns it
+handwritten plan — and EarlySnap classifies it, summarizes it, and turns it
 into a structured digital record. Chat with an AI about any scanned
 document, and sync detected deadlines straight to Google Calendar. See
 [`ai-context.md`](ai-context.md) for full project context.
@@ -26,9 +26,9 @@ php -m | grep -E 'pdo_pgsql|curl'   # both must print
 1. Create the database and role (adjust the password):
 
    ```bash
-   psql -d postgres -c "CREATE ROLE offpapper LOGIN PASSWORD 'devpass';"
-   psql -d postgres -c "CREATE DATABASE offpapper OWNER offpapper;"
-   psql -h localhost -U offpapper -d offpapper -f db/schema.sql
+   psql -d postgres -c "CREATE ROLE earlysnap LOGIN PASSWORD 'devpass';"
+   psql -d postgres -c "CREATE DATABASE earlysnap OWNER earlysnap;"
+   psql -h localhost -U earlysnap -d earlysnap -f db/schema.sql
    ```
 
 2. Copy the env file and fill in your values:

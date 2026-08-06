@@ -94,7 +94,7 @@ try {
 
     // Synthesis prompt
     $systemPrompt = <<<EOT
-You are OffPaper Plan Synthesiser, an expert AI that turns planning conversations into polished, actionable plans.
+You are EarlySnap Plan Synthesiser, an expert AI that turns planning conversations into polished, actionable plans.
 Your sole job is to produce the FINALISED PLAN output — nothing else.
 
 RULES:

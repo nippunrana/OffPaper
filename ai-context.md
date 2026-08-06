@@ -1,14 +1,14 @@
-# OffPaper — Project Context
+# EarlySnap — Project Context
 
 ## What this is
-OffPaper is a web app where users photograph paper documents (bills, prescriptions, lab reports, deadlines, plans/notes), and the app automatically classifies them, generates a 10–20 word summary, and converts them into structured digital records. Users can also chat with an AI about any scanned document, and sync detected deadlines straight to Google Calendar.
+EarlySnap is a web app where users photograph paper documents (bills, prescriptions, lab reports, deadlines, plans/notes), and the app automatically classifies them, generates a 10–20 word summary, and converts them into structured digital records. Users can also chat with an AI about any scanned document, and sync detected deadlines straight to Google Calendar.
 
 ## Status
 Active implementation. Working end-to-end: email/password + Google login, camera/file-upload capture, 2-pass Gemini AI pipeline, multi-category dashboard with filtering, per-document AI chat (split-panel layout with plan finalisation and Gemini Flash Lite speech-to-text mic input), Google Calendar sync for deadlines, and document deletion.
 
 ## Tech Stack
 - **Backend:** Plain PHP (no framework, no build step).
-- **Database:** PostgreSQL (`offpapper` DB via PHP PDO `pdo_pgsql`).
+- **Database:** PostgreSQL (`earlysnap` DB via PHP PDO `pdo_pgsql`).
 - **Frontend:** Vanilla HTML5, CSS, JS (no bundlers/frameworks).
 - **AI Engine:** Google Gemini REST API (`gemini-3.5-flash-lite`) via PHP cURL — the only AI provider used anywhere in this project (classification, extraction, document chat, plan synthesis, and speech-to-text voice input transcription).
 
@@ -16,7 +16,7 @@ Active implementation. Working end-to-end: email/password + Google login, camera
 - `public/` is the web docroot; `src/` and `views/` live outside it and are never web-reachable.
 - Every page requires `src/bootstrap.php` first, which loads `.env`, sets error/session config, and pulls in `db.php`, `helpers.php`, `auth.php`, `google_auth.php`, `google_calendar.php`, and `src/ai/ai.php`.
 - Pages set `$page_title` / `$page_nav` / `$page_css` / `$page_js` then require `views/header.php` ... `views/footer.php`.
-- `url()` / `base_path()` (`src/helpers.php`) auto-detect a subdirectory deployment (e.g. `/offpaper`) from `SCRIPT_NAME`/`REQUEST_URI`, or `APP_BASE_PATH` env override — all internal links go through `url()`.
+- `url()` / `base_path()` (`src/helpers.php`) generate root-relative links; set the `APP_BASE_PATH` env override only if the app is ever deployed under a subdirectory again — all internal links go through `url()`.
 - Uploaded files are stored on disk under `user-uploads/` (relative to `APP_ROOT`) and served back through `public/file.php`, which checks session ownership before streaming the file (never linked directly).
 - Auth: `src/auth.php` handles email/password (bcrypt via `password_hash()`) and Google OAuth account linking/creation, keyed by `google_sub` or matching email. Sessions use `session_regenerate_id()` on login and strict-mode cookies.
 
@@ -43,7 +43,7 @@ Implemented in `src/ai/document_upload/DocumentPipeline.php` + `DocumentSchemas.
 ## Document AI Chat
 - `public/api/chat.php` — per-document Q&A. Loads the `user_uploads` row (auth + ownership checked), builds a system prompt (bullet-point, bolded-highlights style) plus a context block of the doc's summary/categories/`extracted_json`, re-attaches the original image file, and calls Gemini (`gemini-3.5-flash-lite`) fresh on every message. GET requests return `chat_history`, `summary`, and `plan_snapshots` (from `extracted_json`).
 - **Modes:** normal chat or `plan_assist` (activated automatically for `plan`-type docs, or via `data-chat-mode="plan_assist"`). Plan assist uses a different system prompt focused on strengthening, questioning, and prioritising the plan.
-- Frontend: `views/chat_modal.php` + `public/assets/js/doc-chat.js` + `public/assets/css/chat.css`. The chat API endpoint URL is overridable via `window.OFFPAPER_CHAT_URL` (defaults to `api/chat.php`). The finalise endpoint is overridable via `window.OFFPAPER_CHAT_FINALISE_URL` (defaults to `api/chat_finalise_plan.php`).
+- Frontend: `views/chat_modal.php` + `public/assets/js/doc-chat.js` + `public/assets/css/chat.css`. The chat API endpoint URL is overridable via `window.EARLYSNAP_CHAT_URL` (defaults to `api/chat.php`). The finalise endpoint is overridable via `window.EARLYSNAP_CHAT_FINALISE_URL` (defaults to `api/chat_finalise_plan.php`).
 - **Plan-assist session loading:** On modal open in `plan_assist` mode, `loadPlanAssistSession()` makes a single `chat.php` GET call and renders, in order: the latest snapshot's contextual `greeting` (falling back to the generic `renderPlanAssistGreeting()` if no snapshot exists), then chat history, then the plan panel/pill/version tabs. This replaces separately calling `renderPlanAssistGreeting()` + `loadPlanSnapshot()` up front. `loadPlanSnapshot()` is retained only for non-plan-assist snapshot refreshes.
 - **Speech-to-Text (STT):** A microphone button (`#docChatMicBtn`) in the chat input bar allows users to speak their prompts. Recorded audio chunks (`MediaRecorder`) are sent to `public/api/transcribe_audio.php`, which utilizes `gemini-3.5-flash-lite` for verbatim speech transcription before placing the text in the input field.
 - **Note:** `chat.php` persists conversation history for **all document types** in `user_uploads_knowledgebase`. History is loaded on modal open and sent as context on subsequent messages. A `mode=clear_history` POST wipes history to support the "New Chat" button in the frontend.

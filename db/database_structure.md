@@ -1,9 +1,9 @@
-# OffPaper — Database Structure & Schema Reference
+# EarlySnap — Database Structure & Schema Reference
 
 Database engine: **PostgreSQL**  
-Database name: `offpapper`  
-User: `offpapper`  
-Primary Schema definition file: [`db/schema.sql`](file:///var/www/egnitech.com/html/wp-content/projects/sketch-n-ship/offpaper/db/schema.sql)
+Database name: `earlysnap`  
+User: `earlysnap`  
+Primary Schema definition file: [`db/schema.sql`](../db/schema.sql)
 
 ---
 

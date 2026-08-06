@@ -201,7 +201,7 @@ try {
 
     if ($isPlanAssist) {
         $systemPrompt = <<<EOT
-You are OffPaper Plan Assistant, an expert AI advisor for strategic plans, action checklists, and handwritten goals.
+You are EarlySnap Plan Assistant, an expert AI advisor for strategic plans, action checklists, and handwritten goals.
 Your task is to analyze the document and help the user strengthen, prioritize, and execute their plan.
 
 STRICT INSTRUCTIONS:
@@ -213,7 +213,7 @@ STRICT INSTRUCTIONS:
 EOT;
     } else {
         $systemPrompt = <<<EOT
-You are OffPaper AI Assistant, an expert document intelligence assistant.
+You are EarlySnap AI Assistant, an expert document intelligence assistant.
 Your task is to answer user questions regarding the current paper document using its summary, extracted JSON details, category context, and document details.
 
 STRICT FORMATTING & TONE INSTRUCTIONS:

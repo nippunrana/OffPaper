@@ -108,7 +108,7 @@ require VIEWS . '/header.php';
       <ul class="trust-panel__list">
         <li>Free to start — no credit card needed</li>
         <li>Your documents stay private, always</li>
-        <li>Fix anything OffPaper gets wrong in one tap</li>
+        <li>Fix anything EarlySnap gets wrong in one tap</li>
       </ul>
     </aside>
   </div>

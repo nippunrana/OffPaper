@@ -1,5 +1,5 @@
 /**
- * OffPaper Web Camera Capture & Pop-over Modal Controller
+ * EarlySnap Web Camera Capture & Pop-over Modal Controller
  */
 document.addEventListener('DOMContentLoaded', () => {
   const scanModal = document.getElementById('scanModal');

@@ -1,6 +1,6 @@
 <?php
 /**
- * OffPaper — Gemini API REST Client
+ * EarlySnap — Gemini API REST Client
  * 
  * Direct cURL integration with Google Gemini REST API.
  * Supports multimodal inputs (images/PDFs), customizable models (gemini-3.5-flash-lite, gemini-3.6-flash, etc.),

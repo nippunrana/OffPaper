@@ -1,6 +1,6 @@
 /**
  * Landing Page Interactive Features & Micro-Interactions
- * OffPaper — Powered by Google Gemini AI
+ * EarlySnap — Powered by Google Gemini AI
  */
 
 document.addEventListener('DOMContentLoaded', () => {

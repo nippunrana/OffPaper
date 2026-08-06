@@ -1,5 +1,5 @@
 {
-  "$comment": "OffPaper Multi-Category Document Schemas & Mock Payload Reference for Frontend UI",
+  "$comment": "EarlySnap Multi-Category Document Schemas & Mock Payload Reference for Frontend UI",
   "classifier_schema": {
     "summary": "Concise summary of the document strictly between 10 and 20 words long.",
     "categories": ["bills", "deadline"],

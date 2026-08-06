@@ -1,6 +1,6 @@
 <?php
 /**
- * OffPaper — Multi-Stage & Multi-Category AI Document Processing Pipeline
+ * EarlySnap — Multi-Stage & Multi-Category AI Document Processing Pipeline
  * 
  * Manages classification, multi-category specialized prompt execution, and DB persistence for uploaded documents.
  */

@@ -1,4 +1,4 @@
--- OffPaper database schema
+-- EarlySnap database schema
 -- Apply with: psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f db/schema.sql
 
 CREATE TABLE IF NOT EXISTS users (

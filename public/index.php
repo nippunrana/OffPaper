@@ -3,7 +3,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 
 $page_title = 'Get your life off paper — AI Document Copilot';
 $page_nav = 'home';
-$page_desc = 'Snap physical paper documents — bills, lab reports, prescriptions, napkin notes — and OffPaper uses Gemini 3.5 2-pass AI to extract data, chat via voice, sync to Google Calendar, and finalise versioned action plans.';
+$page_desc = 'Snap physical paper documents — bills, lab reports, prescriptions, napkin notes — and EarlySnap uses Gemini 3.5 2-pass AI to extract data, chat via voice, sync to Google Calendar, and finalise versioned action plans.';
 $page_css = ['landing.css'];
 $page_js = ['landing.js'];
 $body_class = 'page-landing';
@@ -19,7 +19,7 @@ require VIEWS . '/header.php';
         <span class="pulsing-dot" aria-hidden="true"></span>
         POWERED BY GOOGLE GEMINI 3.5
       </div>
-      <h1>Snap your paper chaos. OffPaper turns it into action.</h1>
+      <h1>Snap your paper chaos. EarlySnap turns it into action.</h1>
       <p class="hero__subhead">
         Bills, lab reports, prescriptions, and scribbled 11pm notes — photographed in seconds, classified by 2-pass AI, synced to Google Calendar, and ready to chat with via voice.
       </p>
@@ -115,7 +115,7 @@ require VIEWS . '/header.php';
     </div>
 
     <div class="pain__banner">
-      <strong>The cost of paper clutter:</strong> Late payment penalties, frantic calls to medical clinics, and forgotten plans. OffPaper bridges the gap between paper and digital action.
+      <strong>The cost of paper clutter:</strong> Late payment penalties, frantic calls to medical clinics, and forgotten plans. EarlySnap bridges the gap between paper and digital action.
     </div>
   </div>
 </section>
@@ -124,7 +124,7 @@ require VIEWS . '/header.php';
 <section class="how">
   <div class="container">
     <div class="section-header">
-      <h2>How OffPaper Works</h2>
+      <h2>How EarlySnap Works</h2>
       <p>3 simple steps powered by Google Gemini 3.5</p>
     </div>
 
@@ -159,7 +159,7 @@ require VIEWS . '/header.php';
       <div class="feature-block__copy">
         <span class="eyebrow">1-CLICK CALENDAR INTEGRATION</span>
         <h3>Never pay a late fee again. Direct Google Calendar Sync.</h3>
-        <p>When OffPaper detects a bill or deadline document, it parses the exact due date and time. With a single tap, sync it straight into your official Google Calendar with automatic reminders.</p>
+        <p>When EarlySnap detects a bill or deadline document, it parses the exact due date and time. With a single tap, sync it straight into your official Google Calendar with automatic reminders.</p>
         <div style="font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-accent-text);">
           ✓ Handles expired deadline protection &amp; calendar link tracking
         </div>
@@ -221,7 +221,7 @@ require VIEWS . '/header.php';
       <div class="feature-block__copy">
         <span class="eyebrow">PLAN SYNTHESIS &amp; SNAPSHOTS</span>
         <h3>Turn scribbles into versioned action plans.</h3>
-        <p>For plans and notes, chat with AI to refine your ideas, then hit <strong>"Finalise the Plan"</strong>. OffPaper synthesises your entire conversation into a clean, versioned snapshot with Goals, Action Checklists, Timelines, and Risks.</p>
+        <p>For plans and notes, chat with AI to refine your ideas, then hit <strong>"Finalise the Plan"</strong>. EarlySnap synthesises your entire conversation into a clean, versioned snapshot with Goals, Action Checklists, Timelines, and Risks.</p>
       </div>
 
       <div class="feature-block__visual">
@@ -260,7 +260,7 @@ require VIEWS . '/header.php';
       <div class="feature-block__copy">
         <span class="eyebrow">STRUCTURED EXTRACTION SCHEMAS</span>
         <h3>5 Specialized AI Schemas. Zero manual entry.</h3>
-        <p>OffPaper automatically detects your document type and applies customized extraction schemas designed specifically for bills, prescriptions, lab reports, plans, and deadlines.</p>
+        <p>EarlySnap automatically detects your document type and applies customized extraction schemas designed specifically for bills, prescriptions, lab reports, plans, and deadlines.</p>
       </div>
 
       <div class="feature-block__visual">
@@ -332,13 +332,13 @@ require VIEWS . '/header.php';
     <h2>Frequently Asked Questions</h2>
     <div class="faq__list">
       <details class="faq__item">
-        <summary>What types of paper can OffPaper process?</summary>
-        <p>OffPaper works on utility bills, medical prescriptions, laboratory blood reports, scribbled notepad plans, invoices, parking tickets, event flyers, and general handwritten notes.</p>
+        <summary>What types of paper can EarlySnap process?</summary>
+        <p>EarlySnap works on utility bills, medical prescriptions, laboratory blood reports, scribbled notepad plans, invoices, parking tickets, event flyers, and general handwritten notes.</p>
       </details>
 
       <details class="faq__item">
         <summary>How does the Google Calendar integration work?</summary>
-        <p>When you log in with Google (or link your account), OffPaper requests permission to add events to your Google Calendar. When a bill or deadline is detected, tap "Add to Google Calendar" to add the event with due date and reminder alert.</p>
+        <p>When you log in with Google (or link your account), EarlySnap requests permission to add events to your Google Calendar. When a bill or deadline is detected, tap "Add to Google Calendar" to add the event with due date and reminder alert.</p>
       </details>
 
       <details class="faq__item">

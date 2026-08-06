@@ -4,9 +4,9 @@
  * $page_css / $body_class before requiring this file. All are optional.
  */
 
-$page_title = $page_title ?? 'OffPaper';
+$page_title = $page_title ?? 'EarlySnap';
 $page_nav = $page_nav ?? '';
-$page_desc = $page_desc ?? 'Snap a photo of any paper — a bill, a prescription, a handwritten note — and OffPaper turns it into a reminder, a record, or editable text.';
+$page_desc = $page_desc ?? 'Snap a photo of any paper — a bill, a prescription, a handwritten note — and EarlySnap turns it into a reminder, a record, or editable text.';
 $page_css = $page_css ?? [];
 $body_class = $body_class ?? '';
 
@@ -17,7 +17,7 @@ $user = current_user();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e($page_title) ?> — OffPaper</title>
+<title><?= e($page_title) ?> — EarlySnap</title>
 <meta name="description" content="<?= e($page_desc) ?>">
 <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,7 +37,7 @@ $user = current_user();
   <div class="container site-header__inner">
     <a class="logo" href="<?= url('/') ?>">
       <span class="logo__mark" aria-hidden="true"></span>
-      OffPaper
+      EarlySnap
     </a>
 
     <nav class="site-nav" aria-label="Primary">
