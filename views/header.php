@@ -11,14 +11,22 @@ $page_css = $page_css ?? [];
 $body_class = $body_class ?? '';
 
 $user = current_user();
+$canonical_url = 'https://earlysnap.com' . strtok($_SERVER['REQUEST_URI'], '?');
 ?>
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e($page_title) ?> — EarlySnap</title>
+<title>EarlySnap — <?= e($page_title) ?></title>
 <meta name="description" content="<?= e($page_desc) ?>">
+<link rel="canonical" href="<?= e($canonical_url) ?>">
+<meta name="application-name" content="EarlySnap">
+<meta property="og:site_name" content="EarlySnap">
+<meta property="og:title" content="EarlySnap — <?= e($page_title) ?>">
+<meta property="og:description" content="<?= e($page_desc) ?>">
+<meta property="og:url" content="<?= e($canonical_url) ?>">
+<meta property="og:image" content="https://earlysnap.com<?= e(url('/assets/images/logo.webp')) ?>">
 <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
 <link rel="icon" type="image/png" href="<?= asset('images/favicon.png') ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">

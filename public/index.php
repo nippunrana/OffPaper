@@ -11,6 +11,23 @@ $body_class = 'page-landing';
 require VIEWS . '/header.php';
 ?>
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "EarlySnap",
+  "url": "https://earlysnap.com/",
+  "applicationCategory": "ProductivityApplication",
+  "operatingSystem": "Web",
+  "description": "Snap physical paper documents — bills, lab reports, prescriptions, napkin notes — and EarlySnap uses Gemini 3.5 2-pass AI to extract data, chat via voice, sync to Google Calendar, and finalise versioned action plans.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+
 <!-- Hero Section -->
 <section class="hero">
   <div class="container hero__grid">
@@ -23,7 +40,10 @@ require VIEWS . '/header.php';
       <p class="hero__subhead">
         Bills, lab reports, prescriptions, and scribbled 11pm notes — photographed in seconds, classified by 2-pass AI, synced to Google Calendar, and ready to chat with via voice.
       </p>
-      
+      <p class="hero__purpose">
+        <strong>What EarlySnap does:</strong> EarlySnap is a document-to-action app. You photograph a paper document, our AI reads and classifies it, and — with your permission — EarlySnap adds any due dates it finds directly to your Google Calendar using the Google Calendar API. We request Google Calendar access solely to create and manage those reminder events on your behalf; we never sell or share your data with third parties.
+      </p>
+
       <div class="hero__actions">
         <div class="hero__btn-group">
           <a class="btn btn--primary btn--lg" href="<?= url('/login.php?mode=signup') ?>">Get started free</a>

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard.php
+Disallow: /scan.php
+Disallow: /upload.php
+Disallow: /login.php
+Disallow: /logout.php
+Disallow: /file.php
+Disallow: /api/
+Disallow: /auth/
+Disallow: /user-uploads/
+
+Sitemap: https://earlysnap.com/sitemap.xml
