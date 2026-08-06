@@ -34,20 +34,9 @@
 }
 
 .logo__mark {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent);
-  position: relative;
+  height: 2.25rem;
+  width: auto;
   flex-shrink: 0;
-}
-
-.logo__mark::after {
-  content: '';
-  position: absolute;
-  inset: 0.4rem;
-  border: 1.5px solid var(--color-text-inverse);
-  border-radius: 1px;
 }
 
 /* --- Primary nav --- */

@@ -20,6 +20,7 @@ $user = current_user();
 <title><?= e($page_title) ?> — EarlySnap</title>
 <meta name="description" content="<?= e($page_desc) ?>">
 <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
+<link rel="icon" type="image/png" href="<?= asset('images/favicon.png') ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600" rel="stylesheet">
@@ -36,8 +37,7 @@ $user = current_user();
 <header class="site-header">
   <div class="container site-header__inner">
     <a class="logo" href="<?= url('/') ?>">
-      <span class="logo__mark" aria-hidden="true"></span>
-      EarlySnap
+      <img class="logo__mark" src="<?= asset('images/logo.webp') ?>" alt="EarlySnap" width="1065" height="262">
     </a>
 
     <nav class="site-nav" aria-label="Primary">
