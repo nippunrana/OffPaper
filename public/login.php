@@ -56,11 +56,6 @@ require VIEWS . '/header.php';
 <section class="auth">
   <div class="container auth__grid">
     <div class="auth__panel">
-      <div class="auth-tabs" role="tablist">
-        <button type="button" class="auth-tabs__btn <?= $mode === 'login' ? 'is-active' : '' ?>" data-mode="login" role="tab" aria-selected="<?= $mode === 'login' ? 'true' : 'false' ?>">Log in</button>
-        <button type="button" class="auth-tabs__btn <?= $mode === 'signup' ? 'is-active' : '' ?>" data-mode="signup" role="tab" aria-selected="<?= $mode === 'signup' ? 'true' : 'false' ?>">Sign up</button>
-      </div>
-
       <a class="btn btn--google btn--block" href="<?= url('/auth/google/start.php') ?>">
         <svg class="google-icon" viewBox="0 0 18 18" aria-hidden="true">
           <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
@@ -70,37 +65,6 @@ require VIEWS . '/header.php';
         </svg>
         Continue with Google
       </a>
-
-      <div class="auth-divider"><span>or</span></div>
-
-      <form class="auth-form <?= $mode === 'login' ? 'is-active' : '' ?>" data-panel="login" method="post" action="<?= url('/login.php') ?>" novalidate>
-        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-        <input type="hidden" name="action" value="login">
-        <div class="field">
-          <label class="field__label" for="login-email">Email</label>
-          <input class="field__input" type="email" id="login-email" name="email" value="<?= e($mode === 'login' ? $prefill_email : '') ?>" required autocomplete="email">
-        </div>
-        <div class="field">
-          <label class="field__label" for="login-password">Password</label>
-          <input class="field__input" type="password" id="login-password" name="password" required autocomplete="current-password" minlength="8">
-        </div>
-        <button type="submit" class="btn btn--primary btn--block">Log in</button>
-      </form>
-
-      <form class="auth-form <?= $mode === 'signup' ? 'is-active' : '' ?>" data-panel="signup" method="post" action="<?= url('/login.php') ?>" novalidate>
-        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-        <input type="hidden" name="action" value="signup">
-        <div class="field">
-          <label class="field__label" for="signup-email">Email</label>
-          <input class="field__input" type="email" id="signup-email" name="email" value="<?= e($mode === 'signup' ? $prefill_email : '') ?>" required autocomplete="email">
-        </div>
-        <div class="field">
-          <label class="field__label" for="signup-password">Password</label>
-          <input class="field__input" type="password" id="signup-password" name="password" required autocomplete="new-password" minlength="8">
-          <span class="field__hint">At least 8 characters.</span>
-        </div>
-        <button type="submit" class="btn btn--primary btn--block">Create account</button>
-      </form>
     </div>
 
     <aside class="trust-panel">

@@ -1,6 +1,6 @@
 /**
  * Landing Page Interactive Features & Micro-Interactions
- * EarlySnap — Powered by Google Gemini AI
+ * EarlySnap — Powered by AI
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,7 +66,7 @@ function initVoiceChatDemo() {
             <div class="landing-chat-bubble">${data.user}</div>
           </div>
           <div class="landing-chat-msg landing-chat-msg--ai">
-            <div class="landing-chat-badge">✨ Gemini 3.5 AI</div>
+            <div class="landing-chat-badge">✨ AI</div>
             <div class="landing-chat-bubble">${data.ai}</div>
           </div>
         `;
@@ -95,7 +95,7 @@ function initPlanSnapshotDemo() {
     '2': `
       <div class="plan-demo-card plan-demo-card--v2">
         <div class="plan-demo-header">
-          <span class="badge badge--info">v2.0 Refined with Gemini</span>
+          <span class="badge badge--info">v2.0 Refined with AI</span>
           <span class="text-muted">Chat session active</span>
         </div>
         <h4>AI Clarifications:</h4>

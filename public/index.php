@@ -3,7 +3,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 
 $page_title = 'Get your life off paper — AI Document Copilot';
 $page_nav = 'home';
-$page_desc = 'Snap physical paper documents — bills, lab reports, prescriptions, napkin notes — and EarlySnap uses Gemini 3.5 2-pass AI to extract data, chat via voice, sync to Google Calendar, and finalise versioned action plans.';
+$page_desc = 'Snap physical paper documents — bills, lab reports, prescriptions, napkin notes — and EarlySnap uses 2-pass AI to extract data, chat via voice, sync to Google Calendar, and finalise versioned action plans.';
 $page_css = ['landing.css'];
 $page_js = ['landing.js'];
 $body_class = 'page-landing';
@@ -19,7 +19,7 @@ require VIEWS . '/header.php';
   "url": "https://earlysnap.com/",
   "applicationCategory": "ProductivityApplication",
   "operatingSystem": "Web",
-  "description": "Snap physical paper documents — bills, lab reports, prescriptions, napkin notes — and EarlySnap uses Gemini 3.5 2-pass AI to extract data, chat via voice, sync to Google Calendar, and finalise versioned action plans.",
+  "description": "Snap physical paper documents — bills, lab reports, prescriptions, napkin notes — and EarlySnap uses 2-pass AI to extract data, chat via voice, sync to Google Calendar, and finalise versioned action plans.",
   "offers": {
     "@type": "Offer",
     "price": "0",
@@ -34,23 +34,16 @@ require VIEWS . '/header.php';
     <div class="hero__copy">
       <div class="eyebrow">
         <span class="pulsing-dot" aria-hidden="true"></span>
-        POWERED BY GOOGLE GEMINI 3.5
+        POWERED BY AI
       </div>
       <h1>Snap your paper chaos. EarlySnap turns it into action.</h1>
       <p class="hero__subhead">
         Bills, lab reports, prescriptions, and scribbled 11pm notes — photographed in seconds, classified by 2-pass AI, synced to Google Calendar, and ready to chat with via voice.
       </p>
-      <p class="hero__purpose">
-        <strong>What EarlySnap does:</strong> EarlySnap is a document-to-action app. You photograph a paper document, our AI reads and classifies it, and — with your permission — EarlySnap adds any due dates it finds directly to your Google Calendar using the Google Calendar API. We request Google Calendar access solely to create and manage those reminder events on your behalf; we never sell or share your data with third parties.
-      </p>
 
       <div class="hero__actions">
         <div class="hero__btn-group">
           <a class="btn btn--primary btn--lg" href="<?= url('/login.php?mode=signup') ?>">Get started free</a>
-          <a class="btn btn--google btn--lg" href="<?= url('/auth/google/start.php') ?>">
-            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-            Sign in with Google
-          </a>
         </div>
         <div class="hero__fud">
           <span>✓ No credit card required</span>
@@ -67,7 +60,7 @@ require VIEWS . '/header.php';
       <div class="hero-showcase">
         <div class="paper-card">
           <div class="paper-card__badge">📄 Physical Paper Scan</div>
-          <span class="paper-card__line paper-card__line--title"></span>
+          <span class="paper-card__line paper-card__line--title">City Power Co. — Electricity</span>
           <span class="paper-card__line"></span>
           <span class="paper-card__line"></span>
           <span class="paper-card__stamp">UNPAID BILL</span>
@@ -77,7 +70,7 @@ require VIEWS . '/header.php';
           <div class="ai-copilot-header">
             <div class="ai-copilot-tag">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
-              GEMINI 2-PASS PARSED
+              AI 2-PASS PARSED
             </div>
             <span class="badge badge--success">Ready to Sync</span>
           </div>
@@ -145,8 +138,12 @@ require VIEWS . '/header.php';
   <div class="container">
     <div class="section-header">
       <h2>How EarlySnap Works</h2>
-      <p>3 simple steps powered by Google Gemini 3.5</p>
+      <p>3 simple steps powered by AI</p>
     </div>
+
+    <p class="how__purpose">
+      <strong>What EarlySnap does:</strong> EarlySnap is a document-to-action app. You photograph a paper document, our AI reads and classifies it, and — with your permission — EarlySnap adds any due dates it finds directly to your Google Calendar using the Google Calendar API. We request Google Calendar access solely to create and manage those reminder events on your behalf; we never sell or share your data with third parties.
+    </p>
 
     <ol class="how__steps">
       <li class="how__step">
@@ -157,7 +154,7 @@ require VIEWS . '/header.php';
 
       <li class="how__step">
         <span class="how__number tabular-nums">2</span>
-        <h3>Gemini 2-Pass Extraction</h3>
+        <h3>AI 2-Pass Extraction</h3>
         <p>Pass 1 classifies category &amp; generates a strict 10–20 word summary. Pass 2 extracts precise JSON fields (vendors, lab values, dosages).</p>
       </li>
 
@@ -209,7 +206,7 @@ require VIEWS . '/header.php';
     <!-- Feature 2: Voice-Powered Document AI Chat -->
     <div class="feature-block feature-block--reverse">
       <div class="feature-block__copy">
-        <span class="eyebrow">GEMINI FLASH LITE STT &amp; CHAT</span>
+        <span class="eyebrow">AI-POWERED STT &amp; CHAT</span>
         <h3>Talk to your documents. Ask questions with your voice.</h3>
         <p>Every scanned document gets its own AI copilot. Tap the microphone to ask questions out loud ("When is my next refill?", "Did this lab test show normal glucose?") and get verbatim transcriptions with instant AI answers.</p>
       </div>
@@ -228,7 +225,7 @@ require VIEWS . '/header.php';
               <div class="landing-chat-bubble">What dosage did Dr. Patel prescribe for Amoxicillin?</div>
             </div>
             <div class="landing-chat-msg landing-chat-msg--ai">
-              <div class="landing-chat-badge">✨ Gemini 3.5 AI</div>
+              <div class="landing-chat-badge">✨ AI</div>
               <div class="landing-chat-bubble">Dr. Patel prescribed Amoxicillin 500mg — take 1 capsule 3 times daily with food for 10 days. Refill available before Nov 30.</div>
             </div>
           </div>
@@ -327,8 +324,8 @@ require VIEWS . '/header.php';
 
       <div class="trust__card">
         <span class="trust__icon">⚡</span>
-        <h3>Gemini REST Engine</h3>
-        <p>Direct REST communication with Google Gemini 3.5 models. No third-party ad networks ever see your files.</p>
+        <h3>Direct AI Engine</h3>
+        <p>Direct REST communication with our AI models. No third-party ad networks ever see your files.</p>
       </div>
 
       <div class="trust__card">
@@ -363,7 +360,7 @@ require VIEWS . '/header.php';
 
       <details class="faq__item">
         <summary>How accurate is the Voice Chat and AI Extraction?</summary>
-        <p>Powered by Google Gemini 3.5 Flash Lite, extraction leverages strict JSON schema validation. You can also ask questions via microphone (STT) or text, and review/edit any parsed data anytime.</p>
+        <p>Powered by AI, extraction leverages strict JSON schema validation. You can also ask questions via microphone (STT) or text, and review/edit any parsed data anytime.</p>
       </details>
 
       <details class="faq__item">

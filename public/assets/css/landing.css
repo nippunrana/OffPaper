@@ -52,7 +52,7 @@
 }
 
 .hero__copy h1 {
-  font-size: var(--text-4xl);
+  font-size: clamp(2.25rem, 1.6rem + 2.75vw, 3.75rem);
   line-height: var(--leading-tight);
   margin-bottom: var(--space-4);
   letter-spacing: var(--tracking-tight);
@@ -168,10 +168,14 @@
 }
 
 .paper-card__line--title {
-  width: 70%;
-  height: 0.75rem;
-  background: var(--ink-800);
-  opacity: 0.9;
+  width: auto;
+  height: auto;
+  background: none;
+  opacity: 1;
+  color: var(--ink-800);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug, 1.3);
 }
 
 .paper-card__stamp {
@@ -369,6 +373,20 @@
 /* --- How it Works (3 Steps) --- */
 .how {
   padding-block: var(--space-section);
+}
+
+.how__purpose {
+  background: var(--paper-50);
+  border: 1px solid var(--paper-300);
+  border-left: 4px solid var(--clay-600);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-7);
+  max-width: 44rem;
+  margin: 0 auto var(--space-8);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  text-wrap: balance;
+  box-shadow: var(--shadow-sm);
 }
 
 .how__steps {
