@@ -59,12 +59,12 @@ $canonical_url = 'https://earlysnap.com' . strtok($_SERVER['REQUEST_URI'], '?');
       <div class="site-nav__auth">
         <?php if ($user): ?>
           <span class="site-nav__user"><?= e($user['name'] ?? $user['email']) ?></span>
-          <form method="post" action="<?= url('/logout.php') ?>">
+          <form method="post" action="<?= url('/logout.php') ?>" class="site-nav__desktop-only">
             <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
             <button type="submit" class="btn btn--ghost">Log out</button>
           </form>
+          <a class="btn btn--primary" href="<?= url('/dashboard.php') ?>">Dashboard</a>
         <?php else: ?>
-          <a class="btn btn--ghost" href="<?= url('/login.php') ?>">Log in</a>
           <a class="btn btn--primary" href="<?= url('/login.php?mode=signup') ?>">Get started</a>
         <?php endif; ?>
       </div>

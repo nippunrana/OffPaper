@@ -80,6 +80,10 @@
   color: var(--color-text-secondary);
 }
 
+.site-nav__desktop-only {
+  display: none;
+}
+
 .site-nav__toggle {
   display: inline-flex;
   align-items: center;
@@ -124,6 +128,7 @@
 @media (min-width: 768px) {
   .site-nav__links { display: flex; }
   .site-nav__user { display: inline-block; }
+  .site-nav__desktop-only { display: inline-flex; }
   .site-nav__toggle { display: none; }
   .site-nav__mobile-panel { display: none !important; }
 }
