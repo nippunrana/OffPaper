@@ -83,15 +83,103 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetState() {
     capturedBlob = null;
     capturedFile = null;
+    removeProcessingOverlay();
     if (previewCard) previewCard.style.display = 'none';
     if (uploadStatus) uploadStatus.innerHTML = '';
     if (uploadBtn) {
       uploadBtn.disabled = false;
       uploadBtn.textContent = 'Confirm & Upload';
     }
+    if (retakeBtn) retakeBtn.disabled = false;
     if (fileInput) fileInput.value = '';
     if (cameraContainer) cameraContainer.style.display = 'block';
     if (dropzone) dropzone.style.display = 'none';
+  }
+
+  // --- Upload processing overlay (animated scanner state over the preview) ---
+  const PROCESSING_MESSAGES = [
+    'Uploading your image',
+    'Enhancing and reading the document',
+    'AI is identifying the document type',
+    'Extracting dates, amounts and key details',
+    'Organizing it into your dashboard',
+    'Almost done'
+  ];
+  let processingMsgTimer = null;
+
+  function showProcessingOverlay() {
+    const container = previewCard ? previewCard.querySelector('.preview-image-container') : null;
+    if (!container) return;
+    removeProcessingOverlay();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'processing-overlay';
+    overlay.id = 'processingOverlay';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.innerHTML = `
+      <div class="processing-overlay__beam"></div>
+      <div class="processing-overlay__corners"></div>
+      <div class="processing-overlay__corners-bottom"></div>
+      <div class="processing-overlay__card">
+        <div class="processing-overlay__spinner" aria-hidden="true"></div>
+        <div class="processing-overlay__title">Processing your document</div>
+        <div class="processing-overlay__msg">${PROCESSING_MESSAGES[0]}</div>
+        <div class="processing-overlay__bar"><span class="processing-overlay__bar-fill"></span></div>
+      </div>
+    `;
+    container.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+
+    // Advance through the status messages, holding on the last one
+    const msgEl = overlay.querySelector('.processing-overlay__msg');
+    let msgIndex = 0;
+    processingMsgTimer = setInterval(() => {
+      if (msgIndex >= PROCESSING_MESSAGES.length - 1) {
+        clearInterval(processingMsgTimer);
+        processingMsgTimer = null;
+        return;
+      }
+      msgIndex++;
+      msgEl.classList.add('is-switching');
+      setTimeout(() => {
+        msgEl.textContent = PROCESSING_MESSAGES[msgIndex];
+        msgEl.classList.remove('is-switching');
+      }, 160);
+    }, 2600);
+  }
+
+  function showProcessingSuccess(detailText) {
+    const overlay = document.getElementById('processingOverlay');
+    if (!overlay) return;
+    if (processingMsgTimer) {
+      clearInterval(processingMsgTimer);
+      processingMsgTimer = null;
+    }
+
+    overlay.classList.add('is-success');
+    const spinner = overlay.querySelector('.processing-overlay__spinner');
+    if (spinner) {
+      spinner.outerHTML = `
+        <svg class="processing-overlay__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="m8 12.5 2.5 2.5L16 9.5"/>
+        </svg>
+      `;
+    }
+    const titleEl = overlay.querySelector('.processing-overlay__title');
+    if (titleEl) titleEl.textContent = 'Document captured!';
+    const msgEl = overlay.querySelector('.processing-overlay__msg');
+    if (msgEl) msgEl.textContent = detailText || 'Taking you to your dashboard';
+  }
+
+  function removeProcessingOverlay() {
+    if (processingMsgTimer) {
+      clearInterval(processingMsgTimer);
+      processingMsgTimer = null;
+    }
+    const overlay = document.getElementById('processingOverlay');
+    if (overlay) overlay.remove();
   }
 
   // Initialize camera feed if available
@@ -278,10 +366,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (uploadBtn) {
     uploadBtn.addEventListener('click', async () => {
       uploadBtn.disabled = true;
-      uploadBtn.textContent = 'Uploading...';
-      if (uploadStatus) {
-        uploadStatus.innerHTML = '<span class="status-badge">Uploading captured image...</span>';
-      }
+      uploadBtn.textContent = 'Processing...';
+      if (retakeBtn) retakeBtn.disabled = true;
+      if (uploadStatus) uploadStatus.innerHTML = '';
+      showProcessingOverlay();
 
       try {
         const targetUploadUrl = document.body.dataset.uploadUrl || 'upload.php';
@@ -319,31 +407,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (response.ok && data.success) {
-          if (uploadStatus) {
-            uploadStatus.innerHTML = `
-              <div class="flash flash--success">
-                <strong>Document captured!</strong><br>
-                Saved with UUID: <code>${data.upload.uuid}</code><br>
-                Classified Categories: <code>${(data.upload.categories || [data.upload.doc_type]).join(', ')}</code>
-              </div>
-            `;
-          }
+          const categories = data.upload.categories || [data.upload.doc_type];
+          showProcessingSuccess('Filed under: ' + categories.join(', '));
           uploadBtn.textContent = 'Uploaded Successfully';
 
           setTimeout(() => {
             closeScanModal();
             window.location.reload();
-          }, 1500);
+          }, 1800);
         } else {
           throw new Error(data.message || 'Upload failed');
         }
       } catch (err) {
         console.error('Upload Error:', err);
+        removeProcessingOverlay();
         if (uploadStatus) {
-          uploadStatus.innerHTML = `<div class="flash flash--error">Error: ${err.message}</div>`;
+          const errorFlash = document.createElement('div');
+          errorFlash.className = 'flash flash--error';
+          errorFlash.textContent = 'Error: ' + err.message;
+          uploadStatus.innerHTML = '';
+          uploadStatus.appendChild(errorFlash);
         }
         uploadBtn.disabled = false;
         uploadBtn.textContent = 'Confirm & Upload';
+        if (retakeBtn) retakeBtn.disabled = false;
       }
     });
   }

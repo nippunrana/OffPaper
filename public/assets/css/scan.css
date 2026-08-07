@@ -184,6 +184,7 @@
 }
 
 .preview-image-container {
+  position: relative;
   width: 100%;
   max-height: 480px;
   overflow: hidden;
@@ -215,6 +216,233 @@
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: 600;
+}
+
+/* ==========================================================================
+   Upload Processing Overlay — animated "scanner" state over the preview image
+   ========================================================================== */
+
+.processing-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: rgba(20, 16, 12, 0.62);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out-expo);
+}
+
+.processing-overlay.is-visible {
+  opacity: 1;
+}
+
+/* Sweeping scan beam */
+.processing-overlay__beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20%;
+  height: 18%;
+  min-height: 56px;
+  background: linear-gradient(
+    to bottom,
+    rgba(210, 96, 31, 0) 0%,
+    rgba(210, 96, 31, 0.18) 65%,
+    rgba(245, 158, 91, 0.45) 100%
+  );
+  border-bottom: 2px solid rgba(253, 186, 116, 0.95);
+  box-shadow: 0 2px 14px rgba(245, 158, 91, 0.55);
+  animation: scan-beam-sweep 2.6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes scan-beam-sweep {
+  from { top: -20%; }
+  to   { top: 102%; }
+}
+
+/* Viewfinder corner brackets */
+.processing-overlay__corners::before,
+.processing-overlay__corners::after,
+.processing-overlay__corners-bottom::before,
+.processing-overlay__corners-bottom::after {
+  content: '';
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgba(255, 253, 248, 0.85);
+  animation: corner-pulse 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.processing-overlay__corners::before {
+  top: 10px; left: 10px;
+  border-right: none; border-bottom: none;
+  border-top-left-radius: 8px;
+}
+
+.processing-overlay__corners::after {
+  top: 10px; right: 10px;
+  border-left: none; border-bottom: none;
+  border-top-right-radius: 8px;
+}
+
+.processing-overlay__corners-bottom::before {
+  bottom: 10px; left: 10px;
+  border-right: none; border-top: none;
+  border-bottom-left-radius: 8px;
+}
+
+.processing-overlay__corners-bottom::after {
+  bottom: 10px; right: 10px;
+  border-left: none; border-top: none;
+  border-bottom-right-radius: 8px;
+}
+
+@keyframes corner-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* Centered status card */
+.processing-overlay__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  max-width: 88%;
+  background-color: rgba(255, 253, 248, 0.96);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-paper);
+  text-align: center;
+}
+
+.processing-overlay__spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3.5px solid var(--clay-100);
+  border-top-color: var(--color-accent);
+  animation: spinner-rotate 0.9s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
+}
+
+.processing-overlay__check {
+  width: 44px;
+  height: 44px;
+  color: var(--color-success);
+  animation: check-pop 0.45s var(--ease-out-expo);
+}
+
+@keyframes check-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.processing-overlay__title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: var(--leading-snug);
+}
+
+.processing-overlay__msg {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  min-height: 1.5em;
+  transition: opacity var(--duration-fast) ease;
+}
+
+.processing-overlay__msg.is-switching {
+  opacity: 0;
+}
+
+.processing-overlay__msg::after {
+  content: '...';
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: ellipsis-cycle 1.4s steps(4, end) infinite;
+}
+
+@keyframes ellipsis-cycle {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+}
+
+/* Indeterminate shimmer bar */
+.processing-overlay__bar {
+  width: 200px;
+  max-width: 100%;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background-color: var(--paper-200);
+  overflow: hidden;
+}
+
+.processing-overlay__bar-fill {
+  display: block;
+  height: 100%;
+  width: 40%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--clay-500), var(--clay-600));
+  animation: bar-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes bar-slide {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(275%); }
+}
+
+/* Success state */
+.processing-overlay.is-success .processing-overlay__beam,
+.processing-overlay.is-success .processing-overlay__corners,
+.processing-overlay.is-success .processing-overlay__corners-bottom {
+  display: none;
+}
+
+.processing-overlay.is-success .processing-overlay__msg::after {
+  content: none;
+  animation: none;
+}
+
+.processing-overlay.is-success .processing-overlay__bar-fill {
+  width: 100%;
+  background: var(--color-success);
+  animation: none;
+  transform: none;
+}
+
+/* Reduced motion: keep the state visible, calm the movement */
+@media (prefers-reduced-motion: reduce) {
+  .processing-overlay__beam {
+    animation: none;
+    display: none;
+  }
+  .processing-overlay__corners::before,
+  .processing-overlay__corners::after,
+  .processing-overlay__corners-bottom::before,
+  .processing-overlay__corners-bottom::after {
+    animation: none;
+  }
+  .processing-overlay__bar-fill {
+    animation: bar-slide 3s ease-in-out infinite;
+  }
 }
 
 /* Pop-over Scan Modal Overlay */
