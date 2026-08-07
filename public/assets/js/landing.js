@@ -183,67 +183,171 @@ function initCalendarSyncDemo() {
 function initCategoryInspectorDemo() {
   const categoryBtns = document.querySelectorAll('[data-cat-inspect]');
   const inspectorVisual = document.getElementById('landingCategoryVisual');
+  const inspectorImg = document.getElementById('landingCategoryImg');
 
   if (!inspectorVisual || !categoryBtns.length) return;
+
+  const catImages = {
+    'bills': 'doc_bill.png',
+    'prescription': 'doc_prescription.png',
+    'labreport': 'doc_labreport.png',
+    'plan': 'doc_plan.png',
+    'deadline': 'doc_deadline.png'
+  };
 
   const catData = {
     'bills': `
       <div class="inspector-card">
-        <div class="inspector-card__tag">BILL EXTRACTOR</div>
-        <h3>Electricity — City Power Co.</h3>
+        <div class="inspector-card__header">
+          <span class="inspector-card__tag">⚡ BILL EXTRACTOR</span>
+          <span class="badge badge--due-soon">Unpaid</span>
+        </div>
+        <h3 style="margin: 0.5rem 0; font-size: var(--text-lg); color: var(--color-text-primary);">Electricity — City Power Co.</h3>
+        <p style="font-size: var(--text-xs); color: var(--color-text-secondary); margin-bottom: 1rem;">2-pass AI extracted payment amounts and due dates automatically.</p>
         <div class="inspector-card__grid">
-          <div><span class="label">Amount:</span> <strong class="val tabular-nums">$84.20</strong></div>
-          <div><span class="label">Due Date:</span> <strong class="val tabular-nums">Nov 12, 2026</strong></div>
-          <div><span class="label">Invoice #:</span> <strong class="val tabular-nums">INV-993821</strong></div>
-          <div><span class="label">Status:</span> <span class="badge badge--due-soon">Unpaid</span></div>
+          <div class="inspector-field">
+            <span class="label">Vendor Name:</span>
+            <strong class="val">City Power &amp; Light</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Amount Due:</span>
+            <strong class="val tabular-nums text-accent" style="font-size: var(--text-base); font-weight: 700;">$84.20</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Due Date:</span>
+            <strong class="val tabular-nums">Nov 12, 2026</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Account / Invoice #:</span>
+            <strong class="val tabular-nums">INV-993821</strong>
+          </div>
+        </div>
+        <div class="inspector-card__footer">
+          <span class="text-xs text-muted">✓ 1-click Google Calendar reminder ready</span>
         </div>
       </div>
     `,
     'prescription': `
       <div class="inspector-card">
-        <div class="inspector-card__tag">PRESCRIPTION EXTRACTOR</div>
-        <h3>Amoxicillin 500mg</h3>
+        <div class="inspector-card__header">
+          <span class="inspector-card__tag">💊 PRESCRIPTION EXTRACTOR</span>
+          <span class="badge badge--success">Active Rx</span>
+        </div>
+        <h3 style="margin: 0.5rem 0; font-size: var(--text-lg); color: var(--color-text-primary);">Amoxicillin 500mg Capsules</h3>
+        <p style="font-size: var(--text-xs); color: var(--color-text-secondary); margin-bottom: 1rem;">Doctor dosage and refill timelines parsed from physical prescription slip.</p>
         <div class="inspector-card__grid">
-          <div><span class="label">Doctor:</span> <strong class="val">Dr. Aris Patel</strong></div>
-          <div><span class="label">Clinic:</span> <strong class="val">Apex Health Care</strong></div>
-          <div><span class="label">Dosage:</span> <strong class="val">1 cap 3x/day w/ food</strong></div>
-          <div><span class="label">Refills:</span> <strong class="val">2 remaining</strong></div>
+          <div class="inspector-field">
+            <span class="label">Prescribing Doctor:</span>
+            <strong class="val">Dr. Arun Patel, M.D.</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Dosage Instructions:</span>
+            <strong class="val">1 capsule 3x/day with food</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Total Quantity:</span>
+            <strong class="val tabular-nums">21 Capsules (7 Days)</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Refills Available:</span>
+            <strong class="val">Refillable before Nov 30</strong>
+          </div>
+        </div>
+        <div class="inspector-card__footer">
+          <span class="text-xs text-muted">🎙️ Ask Voice Copilot for dosage reminders anytime</span>
         </div>
       </div>
     `,
     'labreport': `
       <div class="inspector-card">
-        <div class="inspector-card__tag">LAB REPORT EXTRACTOR</div>
-        <h3>Comprehensive Blood Panel</h3>
+        <div class="inspector-card__header">
+          <span class="inspector-card__tag">🔬 LAB REPORT EXTRACTOR</span>
+          <span class="badge badge--info">Clinical Panel</span>
+        </div>
+        <h3 style="margin: 0.5rem 0; font-size: var(--text-lg); color: var(--color-text-primary);">Comprehensive Lipid &amp; Blood Panel</h3>
+        <p style="font-size: var(--text-xs); color: var(--color-text-secondary); margin-bottom: 1rem;">Lab values matched against standard reference ranges with status flags.</p>
         <div class="inspector-card__grid">
-          <div><span class="label">Lab:</span> <strong class="val">Quest Diagnostics</strong></div>
-          <div><span class="label">Vitamin D3:</span> <strong class="val text-success">42 ng/mL (Normal)</strong></div>
-          <div><span class="label">Fasting Glucose:</span> <strong class="val text-warning">104 mg/dL (Slightly High)</strong></div>
-          <div><span class="label">Action:</span> <strong class="val">Follow up in 6 months</strong></div>
+          <div class="inspector-field">
+            <span class="label">Laboratory Name:</span>
+            <strong class="val">City Medical Labs</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Fasting Glucose:</span>
+            <strong class="val text-success">92 mg/dL (70-99 Normal)</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Total Cholesterol:</span>
+            <strong class="val text-warning">208 mg/dL (High Flag)</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">HDL Cholesterol:</span>
+            <strong class="val text-success">58 mg/dL (&gt;40 Desirable)</strong>
+          </div>
+        </div>
+        <div class="inspector-card__footer">
+          <span class="text-xs text-muted">📊 AI explains complex medical terms in plain English</span>
         </div>
       </div>
     `,
     'plan': `
       <div class="inspector-card">
-        <div class="inspector-card__tag">PLAN & NOTES EXTRACTOR</div>
-        <h3>Q4 House Maintenance Plan</h3>
+        <div class="inspector-card__header">
+          <span class="inspector-card__tag">✎ PLAN &amp; NOTES EXTRACTOR</span>
+          <span class="badge badge--accent">Plan Assist Active</span>
+        </div>
+        <h3 style="margin: 0.5rem 0; font-size: var(--text-lg); color: var(--color-text-primary);">Weekend Home Maintenance Plan</h3>
+        <p style="font-size: var(--text-xs); color: var(--color-text-secondary); margin-bottom: 1rem;">Handwritten napkin scribble converted into structured checklist snapshots.</p>
         <div class="inspector-card__grid">
-          <div><span class="label">Goal:</span> <strong class="val">Winterize home & plumbing</strong></div>
-          <div><span class="label">Checklist:</span> <strong class="val">3 items extracted</strong></div>
-          <div><span class="label">Mode:</span> <span class="badge badge--accent">Plan Assist Active</span></div>
-          <div><span class="label">Snapshots:</span> <strong class="val">v1.0 Available</strong></div>
+          <div class="inspector-field">
+            <span class="label">Primary Goal:</span>
+            <strong class="val">Resolve plumbing leak &amp; repairs</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Action Items Extracted:</span>
+            <strong class="val">3 checklist tasks created</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Urgent Contact:</span>
+            <strong class="val">A&amp;R Plumbing (555-0199)</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Snapshot Versions:</span>
+            <strong class="val">v1.0, v2.0, v3.0 saved</strong>
+          </div>
+        </div>
+        <div class="inspector-card__footer">
+          <span class="text-xs text-muted">🎯 Finalise plan snapshots anytime during chat</span>
         </div>
       </div>
     `,
     'deadline': `
       <div class="inspector-card">
-        <div class="inspector-card__tag">DEADLINE EXTRACTOR</div>
-        <h3>Property Tax Installment #2</h3>
+        <div class="inspector-card__header">
+          <span class="inspector-card__tag">📅 DEADLINE EXTRACTOR</span>
+          <span class="badge badge--danger">High Priority</span>
+        </div>
+        <h3 style="margin: 0.5rem 0; font-size: var(--text-lg); color: var(--color-text-primary);">Municipal Parking Citation Notice</h3>
+        <p style="font-size: var(--text-xs); color: var(--color-text-secondary); margin-bottom: 1rem;">Official deadline dates and citation numbers parsed instantly.</p>
         <div class="inspector-card__grid">
-          <div><span class="label">Issuer:</span> <strong class="val">County Collector</strong></div>
-          <div><span class="label">Due Date:</span> <strong class="val tabular-nums">Dec 01, 2026</strong></div>
-          <div><span class="label">Priority:</span> <span class="badge badge--danger">High Priority</span></div>
-          <div><span class="label">Calendar Sync:</span> <strong class="val text-accent">Ready to sync</strong></div>
+          <div class="inspector-field">
+            <span class="label">Issuing Authority:</span>
+            <strong class="val">City of Oakhaven</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Action Due Date:</span>
+            <strong class="val tabular-nums text-danger" style="font-weight: 700;">Nov 12, 2026</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Citation Number:</span>
+            <strong class="val tabular-nums">0487532</strong>
+          </div>
+          <div class="inspector-field">
+            <span class="label">Penalty Amount:</span>
+            <strong class="val tabular-nums">$65.00 ($95 after due date)</strong>
+          </div>
+        </div>
+        <div class="inspector-card__footer">
+          <span class="text-xs text-muted">⏰ Prevents late fee penalties with early Google Calendar alerts</span>
         </div>
       </div>
     `
@@ -255,6 +359,17 @@ function initCategoryInspectorDemo() {
       btn.classList.add('is-active');
 
       const cat = btn.dataset.catInspect;
+      
+      // Update image
+      if (inspectorImg && catImages[cat]) {
+        inspectorImg.style.opacity = '0.3';
+        setTimeout(() => {
+          inspectorImg.src = window.EARLYSNAP_BASE_PATH ? window.EARLYSNAP_BASE_PATH + '/assets/images/' + catImages[cat] : 'assets/images/' + catImages[cat];
+          inspectorImg.style.opacity = '1';
+        }, 150);
+      }
+
+      // Update data card
       if (catData[cat]) {
         inspectorVisual.style.opacity = '0.3';
         setTimeout(() => {
