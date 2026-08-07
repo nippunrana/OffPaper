@@ -72,20 +72,24 @@ try {
     if (!empty($doc['extracted_json'])) {
         $extracted = is_string($doc['extracted_json']) ? json_decode($doc['extracted_json'], true) : $doc['extracted_json'];
         $calendarEventId = '';
+        $calendarId = '';
 
         if (is_array($extracted)) {
             if (!empty($extracted['deadline']['calendar_event_id'])) {
                 $calendarEventId = $extracted['deadline']['calendar_event_id'];
+                $calendarId = $extracted['deadline']['calendar_id'] ?? '';
             } elseif (!empty($extracted['data']['deadline']['calendar_event_id'])) {
                 $calendarEventId = $extracted['data']['deadline']['calendar_event_id'];
+                $calendarId = $extracted['data']['deadline']['calendar_id'] ?? '';
             } elseif (!empty($extracted['calendar_event_id'])) {
                 $calendarEventId = $extracted['calendar_event_id'];
+                $calendarId = $extracted['calendar_id'] ?? '';
             }
         }
 
         if (!empty($calendarEventId)) {
             try {
-                google_calendar_delete_event($userId, $calendarEventId);
+                google_calendar_delete_event($userId, $calendarEventId, $calendarId);
             } catch (Throwable $calEx) {
                 error_log('Failed to delete Google Calendar event ' . $calendarEventId . ': ' . $calEx->getMessage());
             }

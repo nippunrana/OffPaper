@@ -7,7 +7,7 @@ function google_auth_url(string $state): string
         'response_type' => 'code',
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
-        'scope' => 'openid email profile https://www.googleapis.com/auth/calendar.events',
+        'scope' => 'openid email profile https://www.googleapis.com/auth/calendar.app.created',
         'access_type' => 'offline',
         'prompt' => 'consent',
         'state' => $state,

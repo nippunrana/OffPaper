@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     google_access_token     TEXT,                -- OAuth access token
     google_refresh_token    TEXT,                -- OAuth refresh token for offline calendar access
     google_token_expires_at TIMESTAMPTZ,         -- Expiration timestamp for access token
+    google_calendar_id      TEXT,                -- App-created "EarlySnap" calendar id (calendar.app.created scope)
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

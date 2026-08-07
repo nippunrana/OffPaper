@@ -143,6 +143,14 @@ $eventData = [
     'description' => $description,
     'start'       => $start,
     'end'         => $end,
+    // The app-created EarlySnap calendar has no default reminders, so set them explicitly.
+    'reminders'   => [
+        'useDefault' => false,
+        'overrides'  => [
+            ['method' => 'popup', 'minutes' => 1440], // 1 day before
+            ['method' => 'popup', 'minutes' => 60],   // 1 hour before
+        ],
+    ],
 ];
 
 $res = google_calendar_add_event($userId, $eventData);
@@ -163,14 +171,17 @@ if (!$res['ok']) {
 if (isset($extracted['deadline']) && is_array($extracted['deadline'])) {
     $extracted['deadline']['calendar_event_id'] = $res['event_id'] ?? '';
     $extracted['deadline']['calendar_html_link'] = $res['html_link'] ?? '';
+    $extracted['deadline']['calendar_id'] = $res['calendar_id'] ?? '';
 }
 if (isset($extracted['data']['deadline']) && is_array($extracted['data']['deadline'])) {
     $extracted['data']['deadline']['calendar_event_id'] = $res['event_id'] ?? '';
     $extracted['data']['deadline']['calendar_html_link'] = $res['html_link'] ?? '';
+    $extracted['data']['deadline']['calendar_id'] = $res['calendar_id'] ?? '';
 }
 if (!isset($extracted['deadline']) && !isset($extracted['data']['deadline'])) {
     $extracted['calendar_event_id'] = $res['event_id'] ?? '';
     $extracted['calendar_html_link'] = $res['html_link'] ?? '';
+    $extracted['calendar_id'] = $res['calendar_id'] ?? '';
 }
 
 $updateStmt = db()->prepare('UPDATE user_uploads SET extracted_json = :extracted WHERE id = :id AND user_id = :user_id');
